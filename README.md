@@ -12,6 +12,7 @@
 
 Horilla can be installed on your system by following the steps below. Ensure you have **Python**, **Django**, and a **database** (preferably PostgreSQL) installed as prerequisites.
 
+
 ---
 
 ## **Prerequisites**
