@@ -1,8 +1,8 @@
 """transfers.models.py"""
 
 from django.db import models
-from employee.models import Employee, Department, User, Designation, EmployeeWorkInformation
-from employee.views import work_info_export
+from employee.models import Employee, Department, User, EmployeeWorkInformation
+from base.models import Designation
 
 
 # Create your models here.
@@ -25,13 +25,14 @@ class EmployeeTransfer(models.Model):
     reason = models.TextField()
     requests_by = models.ForeignKey(User, on_delete=models.SET_NULL,null=True, blank=True, related_name="requests_by")
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null =True, blank = True, related_name="approved_by")
+    rejected_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="rejected_by")
     status = models.CharField( max_length = 255, choices=STATUS_CHOICES, default= "Pending")
 
 
     def save(self,*args,**kwargs):
         """"Automatically fetch the data from EmployeeWorkInformation"""
         if not self.current_location:
-            work_info = EmployeeWorkInformation.objects.filter(employee = self.employee).first()
+            work_info = Employee.objects.filter(badge_id = self.employee).first()
             if work_info:
                 self.current_location = work_info.location
         super().save(*args,**kwargs)
@@ -43,16 +44,17 @@ class EmployeeTransfer(models.Model):
         self.approved_by = user
         self.save()
 
-        work_info = EmployeeWorkInformation.objects.filter(employee=self.employee).first()
+        work_info = Employee.objects.filter(badge_id=self.employee).first()
         if work_info:
             work_info.department = self.new_department
             work_info.designation = self.new_designation
             work_info.location = self.new_location
             work_info.save()
 
-    def reject_transfer(self):
+    def reject_transfer(self, user):
         """Reject the transfer request"""
         self.status = "Reject"
+        self.rejected_by = user
         self.save()
 
     def cancel_transfer(self):
@@ -61,4 +63,4 @@ class EmployeeTransfer(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.employee.name} Transfer ({self.current_department} → {self.new_department})"
+        return f"{self.employee.badge_id} Transfer ({self.current_department} → {self.new_department})"
