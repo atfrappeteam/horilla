@@ -2028,12 +2028,12 @@ def designation_view(request):
     # designation = False
     # if designation.objects.exists():
     #     designation = True
-    designation = Designation.objects.all()
+    designations = Designation.objects.all()
 
     return render(
         request,
         "base/designation/designation.html",
-        { "designation": designation},
+        { "designations": designations},
     )
 
 
@@ -2047,12 +2047,13 @@ def designation_update(request, id, **kwargs):
         id  : designation instance id
     """
     
-    designation = Designation.find(id)
-    form = DesignationForm(instance=Designation)
+    # designation = Designation.find(id)
+    designation = get_object_or_404(Designation, id=id)
+    form = DesignationForm(instance=designation)
     if request.method == "POST":
-        form = DesignationForm(request.POST, instance=Designation)
+        form = DesignationForm(request.POST, instance=designation)
         if form.is_valid():
-            form.save(commit=True)
+            form.save()
             messages.success(request, _("Designation updated."))
             return HttpResponse("<script>window.location.reload()</script>")
 
@@ -2061,7 +2062,8 @@ def designation_update(request, id, **kwargs):
         "base/designation/designation_form.html",
         {
             "form": form,
-            "designation": Designation,
+            "designation": designation,
+            "verbose_name": designation._meta.verbose_name,
         },
     )
 

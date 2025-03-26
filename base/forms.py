@@ -612,48 +612,7 @@ class JobRoleForm(ModelForm):
                     messages.info(request, f"Role already exists under {position}")
                 roles.append(role.pk)
             return JobRole.objects.filter(id__in=roles)
-        super().save(commit, *args, **kwargs)
-
-# class DesignationForm(forms.ModelForm):
-#     """
-#     Designation model's form
-#     """
-
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         if not self.instance.pk:
-#             attrs = self.fields["company_id"].widget.attrs
-#             attrs["class"] = "oh-select oh-select2 w-100"
-#             attrs["style"] = "height:45px;"
-
-#     class Meta:
-#         """
-#         Meta class for additional options
-#         """
-#         model = Designation
-#         fields = "__all__"
-#         exclude = ["is_active"]
-
-#     def save(self, commit=True, *args, **kwargs) -> Any:
-#         """
-#         Custom save method to handle multiple companies.
-#         """
-#         if not self.instance.pk:
-#             request = getattr(_thread_locals, "request", None)
-#             designation_name = self.data["designation"]
-#             companies = self.data.getlist("company_id")
-
-#             roles = []
-#             for company_id in companies:
-#                 designation = Designation()
-#                 designation.designation = designation_name
-#                 designation.save()
-#                 roles.append(designation.pk)
-            
-#             return Designation.objects.filter(id__in=roles)
-
-#         return super().save(commit, *args, **kwargs)
-    
+        super().save(commit, *args, **kwargs)   
 
 # class DesignationForm(forms.ModelForm):
 #     """
@@ -670,59 +629,69 @@ class JobRoleForm(ModelForm):
 #         model = Designation
 #         fields = ["designation", "company_id"] 
 
-    
 #     def save(self, commit=True, *args, **kwargs):
 #         """
 #         Custom save method to handle multiple companies.
 #         """
-#         if not self.instance.pk:
-#             request = getattr(_thread_locals, "request", None)
-#             designation_name = self.data["designation"]  # Ensure correct field name
-#             companies = self.data.getlist("company_id")
+#         request = getattr(_thread_locals, "request", None)
+#         designation_name = self.cleaned_data["designation"]  
+#         companies = self.data.getlist("company_id")
 
-#             roles = []
-#             for company_id in companies:
-#                 designation = designation()
-#                 designation.designation = designation_name  # Ensure field matches model
-#                 designation.save()
-#                 roles.append(designation.pk)
+#         roles = []
+#         for company_id in companies:
+#             designation = Designation.objects.create(designation=designation_name,is_active=True  )
+#             if commit:
+#                 designation.save() 
+#             roles.append(designation.pk)
 
-#             return designation.objects.filter(id__in=roles)
+#         return Designation.objects.filter(id__in=roles)
 
-#         return super().save(commit, *args, **kwargs)
 class DesignationForm(forms.ModelForm):
     """
     Designation model's form
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["designation"].widget.attrs.update({
-            "class": "oh-input",
-            "placeholder": "Enter Designation",
-        })
+
+        # If it's a new instance (creation)
+        if not self.instance.pk:
+            self.fields["company_id"] = forms.ModelMultipleChoiceField(
+                queryset=Company.objects.all(),
+                label=Designation._meta.get_field("company_id").verbose_name,
+                widget=forms.SelectMultiple(attrs={
+                    "class": "oh-select oh-select2 w-100",
+                    "style": "height:45px;",
+                })
+            )
 
     class Meta:
         model = Designation
-        fields = ["designation", "company_id"] 
+        fields = "__all__"
+        exclude = ["is_active"]
 
     def save(self, commit=True, *args, **kwargs):
         """
-        Custom save method to handle multiple companies.
+        Custom save method to correctly handle Many-to-Many `company_id`.
         """
         request = getattr(_thread_locals, "request", None)
-        designation_name = self.cleaned_data["designation"]  
-        companies = self.data.getlist("company_id")
 
-        roles = []
-        for company_id in companies:
-            designation = Designation.objects.create(
-                designation=designation_name
-            )
-            if commit:
-                designation.save() 
-            roles.append(designation.pk)
+        if not self.instance.pk:
+            # Fetch selected companies
+            companies = self.cleaned_data.get("company_id")
+            designation_name = self.cleaned_data.get("designation")
 
-        return Designation.objects.filter(id__in=roles)
+            designation, created = Designation.objects.get_or_create(designation=designation_name)
+
+            if companies:
+                designation.company_id.set(companies)  # Assign many-to-many relationships
+
+            if request:
+                messages.success(request, f"Designation '{designation_name}' created successfully!")
+
+            return designation
+
+        return super().save(commit, *args, **kwargs)
 
 
 class WorkTypeForm(ModelForm):

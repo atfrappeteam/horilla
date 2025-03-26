@@ -1,65 +1,65 @@
 {% load i18n %}
 <div class="row">
-	<div class="col-12">
-		<div class="oh-card__body">
-			<div class="oh-sticky-table oh-sticky-table--no-highlight">
-				<div class="oh-sticky-table__table">
-					<div class="oh-sticky-table__thead">
-						<div class="oh-sticky-table__tr">
-							<div class="oh-sticky-table__th">{% trans "Designations" %}</div>
-							<div class="oh-sticky-table__th">{% trans "Actions" %}</div>
-						</div>
-					</div>
+    <div class="col-12">
+        <div class="oh-card__body">
+            <div class="oh-sticky-table oh-sticky-table--no-highlight">
+                <div class="oh-sticky-table__table">
+                    <div class="oh-sticky-table__thead">
+                        <div class="oh-sticky-table__tr">
+                            <div class="oh-sticky-table__th">{% trans "Designation" %}</div>
+                            <div class="oh-sticky-table__th">{% trans "Actions" %}</div>
+                        </div>
+                    </div>
 
-					<div class="oh-sticky-table__tbody">
-						{% for designation in designations %}
-							<div class="oh-sticky-table__tr">
-								<div class="oh-sticky-table__td">
-									<div class="oh-profile oh-profile--md">
-										<div class="oh-profile__avatar mr-1">
-											<!-- <img src="https://ui-avatars.com/api/?name={{ designation }}&background=random" -->
-												class="oh-profile__image" alt="{{ designation }}" />
-										</div>
-										<span class="oh-profile__name oh-text--dark">{{ designation|capfirst }}</span>
-									</div>
-								</div>
+                    <div class="oh-sticky-table__tbody">
+                        {% if designations %}
+                            {% for designation in designations %}
+                                <div class="oh-sticky-table__tr">
+                                    <div class="oh-sticky-table__td">
+                                        <div class="oh-profile oh-profile--md">
+                                            <span class="oh-profile__name oh-text--dark">
+                                                {{ designation.designation|capfirst }}
+                                            </span>
+                                        </div>
+                                    </div>
 
-								<div class="oh-sticky-table__td d-flex">
-									{% if perms.base.change_designation %}
-										<div class="m-2">
-											<a hx-get="{% url 'designation-update' designation.id %}"
-												hx-target="#designationForm" data-toggle="oh-modal-toggle"
-												data-target="#designationModal" class="mr-3"
-												title="{% trans 'Edit' %}">
-												<ion-icon name="pencil-outline"></ion-icon>
-											</a>
-										</div>
-									{% endif %}
-									{% if perms.base.delete_designation %}
-										<div class="m-2">
-											<form hx-confirm="{% trans 'Are you sure you want to delete this designation?' %}"
-												hx-post="{% url 'designation-delete' designation.id %}"
-												hx-target="this.closest('.oh-sticky-table__tr')"
-												hx-swap="outerHTML">
-												<button role="submit" style="background: none; border: none; cursor: pointer; outline: none;" title="{% trans 'Remove' %}">
-													<ion-icon name="close-outline"></ion-icon>
-												</button>
-												{% csrf_token %}
-											</form>
-										</div>
-									{% endif %}
-								</div>
-							</div>
-						{% empty %}
-							<div class="oh-sticky-table__tr">
-								<div class="oh-sticky-table__td" colspan="2">
-									<p class="text-center">{% trans "No Designations Found" %}</p>
-								</div>
-							</div>
-						{% endfor %}
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+                                    <div class="oh-sticky-table__td d-flex">
+                                        {% if perms.base.change_designation %}
+                                            <div class="m-2">
+                                                <a hx-get="{% url 'designation-update' designation.id %}"
+                                                    hx-target="#designationForm" data-toggle="oh-modal-toggle"
+                                                    data-target="#designationModal" class="mr-3"
+                                                    title="{% trans 'Edit' %}">
+                                                    <ion-icon name="pencil-outline"></ion-icon>
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                        {% if perms.base.delete_designation %}
+                                            <div class="m-2">
+                                                <form hx-confirm="{% trans 'Are you sure you want to delete this designation?' %}"
+                                                    hx-post="{% url 'designation-delete' designation.id %}"
+                                                    hx-target="this.closest('.oh-sticky-table__tr')"
+                                                    hx-swap="outerHTML">
+                                                    <button role="submit" style="background: none; border: none; cursor: pointer; outline: none;" title="{% trans 'Remove' %}">
+                                                        <ion-icon name="close-outline"></ion-icon>
+                                                    </button>
+                                                    {% csrf_token %}
+                                                </form>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="oh-sticky-table__tr">
+                                <div class="oh-sticky-table__td text-center" colspan="2">
+                                    <p>{% trans "No Designations Found" %}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
