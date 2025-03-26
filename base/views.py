@@ -1900,29 +1900,112 @@ def job_role_update(request, id, **kwargs):
         },
     )
 
+# @login_required
+# @hx_request_required
+# @permission_required("base.add_designation")
+# def designation_create(request):
+#     """
+#     This method is used to create designation.
+#     """
+#     dynamic = request.GET.get("dynamic")
+#     form = DesignationForm()
+#     verbose_name = form._meta.model._meta.verbose_name
+#     if request.method == "POST":
+#         form = DesignationForm(request.POST)
+#         if form.instance.pk and form.is_valid():
+#             form.save(commit=True)
+#             messages.success(request, _("Designation has been created successfully!"))
+#         elif (
+#             not form.instance.pk
+#             and form.data.getlist("job_position_id")
+#             and form.data.get("designation_name")
+#         ):
+#             form.save(commit=True)
+#             messages.success(request, _("Designation has been created successfully!"))
+#             return HttpResponse("<script>window.location.reload()</script>")
+
+#     return render(
+#         request,
+#         "base/designation/designation_form.html",
+#         {
+#             "form": form,
+#             "dynamic": dynamic,
+#             "verbose_name": verbose_name, 
+#         },
+#     )
+
+
+# @login_required
+# @permission_required("base.view_designation")
+# def designation_view(request):
+#     """
+#     This method is used to view designations.
+#     """
+    
+#     # jobs = JobPosition.objects.all()
+#     # designation = False
+#     # if designation.objects.exists():
+#     #     designation = True
+#     designation = Designation.objects.all()
+
+#     return render(
+#         request,
+#         "base/designation/designation.html",
+#         { "designation": designation},
+#     )
+
+
+# @login_required
+# @hx_request_required
+# @permission_required("base.change_designation")
+# def designation_update(request, id, **kwargs):
+#     """
+#     This method is used to update designation instance
+#     args:
+#         id  : designation instance id
+#     """
+    
+#     designation = Designation.find(id)
+#     form = DesignationForm(instance=Designation)
+#     if request.method == "POST":
+#         form = DesignationForm(request.POST, instance=Designation)
+#         if form.is_valid():
+#             form.save(commit=True)
+#             messages.success(request, _("Designation updated."))
+#             return HttpResponse("<script>window.location.reload()</script>")
+
+#     return render(
+#         request,
+#         "base/designation/designation_form.html",
+#         {
+#             "form": form,
+#             "designation": Designation,
+#         },
+#     )
+
 @login_required
 @hx_request_required
 @permission_required("base.add_designation")
 def designation_create(request):
     """
-    This method is used to create designation.
+    This method is used to create a designation.
     """
     dynamic = request.GET.get("dynamic")
     form = DesignationForm()
     verbose_name = form._meta.model._meta.verbose_name
+
     if request.method == "POST":
         form = DesignationForm(request.POST)
-        if form.instance.pk and form.is_valid():
-            form.save(commit=True)
-            messages.success(request, _("Designation has been created successfully!"))
-        elif (
-            not form.instance.pk
-            and form.data.getlist("job_position_id")
-            and form.data.get("designation_name")
-        ):
-            form.save(commit=True)
-            messages.success(request, _("Designation has been created successfully!"))
-            return HttpResponse("<script>window.location.reload()</script>")
+
+        if form.is_valid():
+            try:
+                form.save(commit=True)
+                messages.success(request, _("Designation has been created successfully!"))
+                return HttpResponse("<script>window.location.reload()</script>")
+            except Exception as e:
+                messages.error(request, _(f"Error: {str(e)}"))
+        else:
+            print("Form Errors:", form.errors)  # Debugging
 
     return render(
         request,
@@ -1933,7 +2016,6 @@ def designation_create(request):
             "verbose_name": verbose_name, 
         },
     )
-
 
 @login_required
 @permission_required("base.view_designation")

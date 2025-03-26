@@ -655,6 +655,41 @@ class JobRoleForm(ModelForm):
 #         return super().save(commit, *args, **kwargs)
     
 
+# class DesignationForm(forms.ModelForm):
+#     """
+#     Designation model's form
+#     """
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.fields["designation"].widget.attrs.update({
+#             "class": "oh-input",
+#             "placeholder": "Enter Designation",
+#         })
+
+#     class Meta:
+#         model = Designation
+#         fields = ["designation", "company_id"] 
+
+    
+#     def save(self, commit=True, *args, **kwargs):
+#         """
+#         Custom save method to handle multiple companies.
+#         """
+#         if not self.instance.pk:
+#             request = getattr(_thread_locals, "request", None)
+#             designation_name = self.data["designation"]  # Ensure correct field name
+#             companies = self.data.getlist("company_id")
+
+#             roles = []
+#             for company_id in companies:
+#                 designation = designation()
+#                 designation.designation = designation_name  # Ensure field matches model
+#                 designation.save()
+#                 roles.append(designation.pk)
+
+#             return designation.objects.filter(id__in=roles)
+
+#         return super().save(commit, *args, **kwargs)
 class DesignationForm(forms.ModelForm):
     """
     Designation model's form
@@ -670,27 +705,24 @@ class DesignationForm(forms.ModelForm):
         model = Designation
         fields = ["designation", "company_id"] 
 
-    
     def save(self, commit=True, *args, **kwargs):
         """
         Custom save method to handle multiple companies.
         """
-        if not self.instance.pk:
-            request = getattr(_thread_locals, "request", None)
-            designation_name = self.data["designation"]  # Ensure correct field name
-            companies = self.data.getlist("company_id")
+        request = getattr(_thread_locals, "request", None)
+        designation_name = self.cleaned_data["designation"]  
+        companies = self.data.getlist("company_id")
 
-            roles = []
-            for company_id in companies:
-                designation = designation()
-                designation.designation = designation_name  # Ensure field matches model
-                designation.save()
-                roles.append(designation.pk)
+        roles = []
+        for company_id in companies:
+            designation = Designation.objects.create(
+                designation=designation_name
+            )
+            if commit:
+                designation.save() 
+            roles.append(designation.pk)
 
-            return designation.objects.filter(id__in=roles)
-
-        return super().save(commit, *args, **kwargs)
-    
+        return Designation.objects.filter(id__in=roles)
 
 
 class WorkTypeForm(ModelForm):
