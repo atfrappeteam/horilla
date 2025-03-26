@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "widget_tweaks",
     "django_apscheduler",
     "project",
+    "transfers"
 ]
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 

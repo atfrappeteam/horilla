@@ -149,4 +149,10 @@ whoosh_index/
 #VSCode
 .vscode/
 
+
+#env file
+.en!/.env
+!/.env.dist
+!/.env-copy
+
 .env.dist
