@@ -48,6 +48,7 @@ SIDEBARS = [
     "recruitment",    
     "onboarding",
     "employee",
+    "transfers",
     "project",
     "attendance",
     "leave",

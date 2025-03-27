@@ -6,55 +6,60 @@
 
 <div class="container">
     <h2>Employee Transfer Requests</h2>
-<!--    {%csrf_token%}-->
+    <!--    {%csrf_token%}-->
 
     {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li class="{{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
+    <ul class="messages">
+        {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
     {% endif %}
 
     {% if transfers %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Employee</th>
-                    <th>Current Department</th>
-                    <th>New Department</th>
-                    <th>Status</th>
-                    <th>Requested By</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for transfer in transfers %}
-                    <tr>
-                        <td>{{ transfer.employee }}</td>
-                        <td>{{ transfer.current_department }}</td>
-                        <td>{{ transfer.new_department }}</td>
-                        <td class="{% if transfer.status == 'Pending' %}pending
-                                   {% elif transfer.status == 'Approve' %}approved
-                                   {% elif transfer.status == 'Reject' %}rejected
-                                   {% elif transfer.status == 'Cancelled' %}cancelled
-                                   {% endif %}">
-                            {{ transfer.status }}
-                        </td>
-                        <td>{{ transfer.requests_by }}</td>
-                        <td>
-                            {% if transfer.status == "Pending" %}
-                                <a href="{% url 'approved_transfer' transfer.id %}" class="btn btn-success">Approve</a>
-                                <a href="{% url 'rejected_transfer' transfer.id %}" class="btn btn-danger">Reject</a>
-                            {% else %}
-                                <span class="status-info">Processed</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Employee</th>
+            <th>Current Department</th>
+            <th>New Department</th>
+            <th>Status</th>
+            <th>Requested By</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for transfer in transfers %}
+        <tr>
+            <td>{{ transfer.employee }}</td>
+            <td>{{ transfer.current_department.name }}</td>
+            <td>{{ transfer.new_department.name }}</td>
+            <td>{{ transfer.status }}</td>
+            <td>{{ transfer.requests_by.username }}</td>
+            <td>
+                {% if transfer.status == "Requested" %}
+                <a href="{% url 'process_transfer' transfer.id %}" class="btn btn-info">Process</a>
+                <a href="{% url 'cancelled_transfer' transfer.id %}" class="btn btn-warning">Cancel</a>
+
+                {% elif transfer.status == "Processed" %}
+                <a href="{% url 'approved_transfer' transfer.id %}" class="btn btn-success">Approve</a>
+                <a href="{% url 'rejected_transfer' transfer.id %}" class="btn btn-danger">Reject</a>
+                <a href="{% url 'cancelled_transfer' transfer.id %}" class="btn btn-warning">Cancel</a>
+
+                {% elif transfer.status == "Approved" %}
+                <span class="badge badge-success">Approved</span>
+                <a href="{% url 'cancelled_transfer' transfer.id %}" class="btn btn-warning">Cancel</a>
+
+                {% else %}
+                <span class="badge badge-secondary">Processed</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
     {% else %}
-        <p>No transfer requests found.</p>
+    <p>No transfer requests found.</p>
     {% endif %}
 </div>
