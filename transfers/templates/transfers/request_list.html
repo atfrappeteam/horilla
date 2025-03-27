@@ -32,8 +32,8 @@
         {% for transfer in transfers %}
         <tr>
             <td>{{ transfer.employee }}</td>
-            <td>{{ transfer.current_department.name }}</td>
-            <td>{{ transfer.new_department.name }}</td>
+            <td>{{ transfer.current_department }}</td>
+            <td>{{ transfer.new_department}}</td>
             <td>{{ transfer.status }}</td>
             <td>{{ transfer.requests_by.username }}</td>
             <td>

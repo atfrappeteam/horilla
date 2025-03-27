@@ -9,10 +9,10 @@ from base.models import Designation
 class EmployeeTransfer(models.Model):
     STATUS_CHOICES = [
         ("Requested", "Requested"),
-        ("Pending" , "pending"),
-        ("Approve", "approve"),
-        ("Reject", "reject"),
-        ("Cancelled","cancelled")
+        ("Pending", "Pending"),
+        ("Approved", "Approved"),
+        ("Rejected", "Rejected"),
+        ("Cancelled", "Cancelled"),
     ]
 
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
@@ -27,33 +27,41 @@ class EmployeeTransfer(models.Model):
     requests_by = models.ForeignKey(User, on_delete=models.SET_NULL,null=True, blank=True, related_name="requests_by")
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null =True, blank = True, related_name="approved_by")
     rejected_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="rejected_by")
+    cancelled_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="cancelled_by")
     status = models.CharField( max_length = 255, choices=STATUS_CHOICES, default="Requested")
 
     def save(self, *args, **kwargs):
-        """Automatically fetch the data from EmployeeWorkInformation"""
-        if not self.current_department or not self.current_designation or not self.current_location:
-            work_info = EmployeeWorkInformation.objects.filter(employee_id=self.employee.id).first()
+        """Automatically fetch the current department and designation from EmployeeWorkInformation"""
+
+        # Ensure employee exists before fetching work info
+        if self.employee:
+            work_info = EmployeeWorkInformation.objects.filter(employee_id=self.employee).first()
             if work_info:
-                self.current_department = work_info.department_id
-                self.current_designation = work_info.designation_id
-                self.current_location = work_info.location
+                self.current_department = work_info.department_id  # Fetch current department
+                self.current_designation = work_info.designation_id  # Fetch current designation
+                self.current_location = work_info.location  # Fetch current location
 
         # Automatically set 'requested_by' if not provided
-        if not self.requests_by:
+        if not self.requests_by and self.employee:
             self.requests_by = self.employee.user
 
         super().save(*args, **kwargs)
 
     def approve_transfer(self, user):
         """Approve transfer and update Employee and EmployeeWorkInformation"""
-        self.status ="Approve"
+        self.status = "Approved"
         self.approved_by = user
         self.save()
 
-        work_info = Employee.objects.filter(badge_id=self.employee).first()
+        employee = self.employee
+        if self.new_designation:
+            employee.designation_id = self.new_designation  # ✅ Update Designation
+        employee.save()
+
+        work_info = EmployeeWorkInformation.objects.filter(employee_id=self.employee).first()
         if work_info:
-            work_info.department = self.new_department
-            work_info.designation = self.new_designation
+            work_info.department_id = self.new_department
+            work_info.designation_id = self.new_designation
             work_info.location = self.new_location
             work_info.save()
 
@@ -63,9 +71,10 @@ class EmployeeTransfer(models.Model):
         self.rejected_by = user
         self.save()
 
-    def cancel_transfer(self):
+    def cancel_transfer(self, user):
         """Cancel the transfer request"""
         self.status = "Cancelled"
+        self.cancelled_by = user
         self.save()
 
     def __str__(self):
