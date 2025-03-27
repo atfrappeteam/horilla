@@ -16,6 +16,7 @@ from base.context_processors import get_initial_prefix
 from base.models import (
     Company,
     Department,
+    Designation,
     EmployeeShift,
     EmployeeType,
     JobPosition,
@@ -252,6 +253,26 @@ def bulk_create_department_import(success_lists):
 
     if department_obj_list:
         Department.objects.bulk_create(department_obj_list)
+
+
+def bulk_create_designation_import(success_lists):
+    """
+    Bulk creation of designation instances based on the excel import of employees
+    """
+    designation_to_import = {
+        convert_nan("Designation", work_info) for work_info in success_lists
+    }
+    existing_designation = {dep.designation for dep in Designation.objects.all()}
+    designation_obj_list = []
+
+    for designation in designation_to_import:
+        if designation and designation not in existing_designation:
+            designation_obj = Designation(designation=designation)
+            designation_obj_list.append(designation_obj)
+            existing_designation.add(designation)
+
+    if designation_obj_list:
+        Designation.objects.bulk_create(designation_obj_list)
 
 
 def bulk_create_job_position_import(success_lists):

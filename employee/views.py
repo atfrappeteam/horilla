@@ -56,6 +56,7 @@ from base.methods import (
 from base.models import (
     Company,
     Department,
+    Designation,
     EmailLog,
     EmployeeShift,
     EmployeeType,
@@ -86,6 +87,7 @@ from employee.forms import (
 )
 from employee.methods.methods import (
     bulk_create_department_import,
+    bulk_create_designation_import,
     bulk_create_employee_import,
     bulk_create_employee_types,
     bulk_create_job_position_import,
@@ -1075,6 +1077,7 @@ def view_employee_bulk_update(request):
 
                                     if (
                                         parts[1] == "department_id"
+                                        or parts[1]== "designation_id"
                                         or parts[1] == "job_position_id"
                                         or parts[1] == "job_role_id"
                                     ):
@@ -1086,6 +1089,16 @@ def view_employee_bulk_update(request):
                                             widgets["department_id"] = Select(
                                                 attrs={"required": True}
                                             )
+
+                                        if (
+                                            not "employee_work_info__designation_id"
+                                            in update_fields
+                                        ):
+                                            fields.append("designation_id")
+                                            widgets["designation_id"] = Select(
+                                                attrs={"required": True}
+                                            )
+
                                         if (
                                             not "employee_work_info__job_position_id"
                                             in update_fields
@@ -1137,6 +1150,13 @@ def view_employee_bulk_update(request):
                                 "onchange": "depChange($(this))",
                             }
                         )
+                    if "designation_id" in self.fields:
+                        self.fields["designation_id"].widget.attrs.update(
+                            {
+                                "onchange": "depChange($(this))",
+                            }
+                        )
+                    
                     if "job_position_id" in self.fields:
                         self.fields["job_position_id"].widget.attrs.update(
                             {
@@ -2442,6 +2462,7 @@ def work_info_import(request):
             "Email",
             "Gender",
             "Department",
+            "Designation",
             "Job Position",
             "Job Role",
             "Work Type",
@@ -2464,6 +2485,7 @@ def work_info_import(request):
         "Email": [],
         "Gender": [],
         "Department": [],
+        "Designation":[],
         "Job Position": [],
         "Job Role": [],
         "Work Type": [],
@@ -2618,6 +2640,7 @@ def work_info_import(request):
 
                 total_count = len(employees)
                 bulk_create_department_import(success_lists)
+                bulk_create_designation_import(success_lists)
                 bulk_create_job_position_import(success_lists)
                 bulk_create_job_role_import(success_lists)
                 bulk_create_work_types(success_lists)
@@ -2805,6 +2828,9 @@ def get_employees_birthday(request):
             ),
             "department": (
                 emp.get_department().department if emp.get_department() else ""
+            ),
+            "designation":(
+                emp.get_designation().designation if emp.get_designation() else ""
             ),
             "job_position": (
                 emp.get_job_position().job_position if emp.get_job_position() else ""
@@ -3565,6 +3591,22 @@ def get_job_positions(request):
     )
     return JsonResponse({"job_positions": dict(job_positions)})
 
+@login_required
+def get_designation(request):
+    department_id = request.GET.get("department_id")
+
+    # Ensure designation_id is an integer
+    try:
+        department_id = int(department_id) if department_id else None
+    except ValueError:
+        return JsonResponse({"error": "Invalid department_id"}, status=400)
+
+    # Fetch designations
+    designations = []
+    if department_id:
+        designations = Designation.objects.filter(department_id=department_id).values_list("id", "designation")
+
+    return JsonResponse({"designations": [{"id": id, "designation": name} for id, name in designations]})
 
 @login_required
 def get_job_roles(request):

@@ -302,6 +302,7 @@ class EmployeeWorkInformationForm(ModelForm):
         model = EmployeeWorkInformation
         fields = (
             "department_id",
+            "designation_id",
             "job_position_id",
             "job_role_id",
             "shift_id",
@@ -341,6 +342,7 @@ class EmployeeWorkInformationForm(ModelForm):
                 self.fields[field].disabled = True
         field_names = {
             "Department": "department",
+            "Designation":"designation",
             "Job Position": "job_position",
             "Job Role": "job_role",
             "Work Type": "work_type",
@@ -349,6 +351,7 @@ class EmployeeWorkInformationForm(ModelForm):
         }
         urls = {
             "Department": "#dynamicDept",
+            "Designation":"#dynamicDesignation",
             "Job Position": "#dynamicJobPosition",
             "Job Role": "#dynamicJobRole",
             "Work Type": "#dynamicWorkType",
@@ -487,7 +490,7 @@ excel_columns = [
     ("email", trans("Email")),
     ("phone", trans("Phone")),
     ("experience", trans("Experience")),
-    # ("designation", trans("Designation")),
+    ("designation", trans("Designation")),
     ("gender", trans("Gender")),
     ("dob", trans("Date of Birth")),
     ("country", trans("Country")),
@@ -504,6 +507,7 @@ excel_columns = [
     ("employee_work_info__email", trans("Work Email")),
     ("employee_work_info__mobile", trans("Work Phone")),
     ("employee_work_info__department_id", trans("Department")),
+    ("employee_work_info__designation_id", trans("Designation")),
     ("employee_work_info__job_position_id", trans("Job Position")),
     ("employee_work_info__job_role_id", trans("Job Role")),
     ("employee_work_info__shift_id", trans("Shift")),
@@ -545,6 +549,7 @@ class EmployeeExportExcelForm(forms.Form):
             "phone",
             "gender",
             "employee_work_info__department_id",
+            "employee_work_info_designation_id",
             "employee_work_info__job_position_id",
             "employee_work_info__job_role_id",
             "employee_work_info__shift_id",

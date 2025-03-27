@@ -273,6 +273,7 @@ urlpatterns = [
 
     path("settings/designation-create/", views.designation_create, name="designation-create"),
     path("settings/designation-view/", views.designation_view, name="designation-view"),
+    path("designation-delete/", views.delete_designation, name="designation-delete"),
     path(
     "settings/designation-update/<int:id>/",
     views.designation_update,

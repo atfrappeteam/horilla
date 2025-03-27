@@ -405,6 +405,7 @@ urlpatterns = [
         views.get_manager_in,
         name="get-manager-in",
     ),
+    path("get-designation",views.get_designation,name="get-designation"),
     path("get-job-positions", views.get_job_positions, name="get-job-positions"),
     path("get-job-roles", views.get_job_roles, name="get-job-roles"),
     path("employee-tag-view/", views.employee_tag_view, name="employee-tag-view"),
