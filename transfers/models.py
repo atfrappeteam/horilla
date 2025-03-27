@@ -8,6 +8,7 @@ from base.models import Designation
 # Create your models here.
 class EmployeeTransfer(models.Model):
     STATUS_CHOICES = [
+        ("Requested", "Requested"),
         ("Pending" , "pending"),
         ("Approve", "approve"),
         ("Reject", "reject"),
@@ -26,17 +27,22 @@ class EmployeeTransfer(models.Model):
     requests_by = models.ForeignKey(User, on_delete=models.SET_NULL,null=True, blank=True, related_name="requests_by")
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null =True, blank = True, related_name="approved_by")
     rejected_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="rejected_by")
-    status = models.CharField( max_length = 255, choices=STATUS_CHOICES, default= "Pending")
+    status = models.CharField( max_length = 255, choices=STATUS_CHOICES, default="Requested")
 
-
-    def save(self,*args,**kwargs):
-        """"Automatically fetch the data from EmployeeWorkInformation"""
-        if not self.current_location:
-            work_info = Employee.objects.filter(badge_id = self.employee).first()
+    def save(self, *args, **kwargs):
+        """Automatically fetch the data from EmployeeWorkInformation"""
+        if not self.current_department or not self.current_designation or not self.current_location:
+            work_info = EmployeeWorkInformation.objects.filter(employee_id=self.employee.id).first()
             if work_info:
+                self.current_department = work_info.department_id
+                self.current_designation = work_info.designation_id
                 self.current_location = work_info.location
-        super().save(*args,**kwargs)
 
+        # Automatically set 'requested_by' if not provided
+        if not self.requests_by:
+            self.requests_by = self.employee.user
+
+        super().save(*args, **kwargs)
 
     def approve_transfer(self, user):
         """Approve transfer and update Employee and EmployeeWorkInformation"""
