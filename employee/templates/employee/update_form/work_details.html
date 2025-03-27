@@ -27,6 +27,15 @@
       hx-target="#dynamicCreateModalBody"
     ></span>
     <span
+    name=""
+    id="dynamicDesignation"
+    style="display: none"
+    data-toggle="oh-modal-toggle"
+    data-target="#dynamicCreateModal"
+    hx-get="{% url 'designation-create' %}?dynamic=true"
+    hx-target="#dynamicCreateModalBody"
+  ></span>
+    <span
       name=""
       id="dynamicJobPosition"
       style="display: none"

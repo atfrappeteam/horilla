@@ -28,9 +28,9 @@
 
             <!-- Designation Name Field -->
             <div class="oh-input-group mb-2">
-                <label class="mb-1">{% trans "Designation Name" %}</label>
+                <label class="mb-1">{% trans "Designation Name" %}</label><br>
                 {{ form.designation.errors }} 
-                <input type="text" name="designation" class="oh-input" placeholder="Enter Designation Name" value="{{ form.designation.value|default_if_none:'' }}">
+                <input type="text" name="designation" class="same-width" placeholder="Enter Designation Name" value="{{ form.designation.value|default_if_none:'' }}">
             </div>
         </div>
 
@@ -41,3 +41,12 @@
         </div>
     </form>
 </div>
+
+<style>
+    .same-width {
+        width: 100%; /* Makes textbox match the dropdown width */
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+</style>

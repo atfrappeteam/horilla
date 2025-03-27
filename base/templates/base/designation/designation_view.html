@@ -37,13 +37,13 @@
                                         {% if perms.base.delete_designation %}
                                             <div class="m-2">
                                                 <form hx-confirm="{% trans 'Are you sure you want to delete this designation?' %}"
-                                                    hx-post="{% url 'designation-delete' designation.id %}"
-                                                    hx-target="this.closest('.oh-sticky-table__tr')"
-                                                    hx-swap="outerHTML">
-                                                    <button role="submit" style="background: none; border: none; cursor: pointer; outline: none;" title="{% trans 'Remove' %}">
-                                                        <ion-icon name="close-outline"></ion-icon>
-                                                    </button>
-                                                    {% csrf_token %}
+                                                   hx-post="{% url 'designation-delete' designation.id %}"
+                                                   hx-target="closest .oh-sticky-table__tr"
+                                                   hx-swap="outerHTML">
+                                                      {% csrf_token %}
+                                                         <button type="submit" style="background: none; border: none; cursor: pointer; outline: none;" title="{% trans 'Remove' %}">
+                                                         <ion-icon name="close-outline"></ion-icon>
+                                                         </button>
                                                 </form>
                                             </div>
                                         {% endif %}

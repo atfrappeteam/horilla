@@ -23,6 +23,7 @@ from base.horilla_company_manager import HorillaCompanyManager
 from base.models import (
     Company,
     Department,
+    Designation,
     EmployeeShift,
     EmployeeType,
     JobPosition,
@@ -84,7 +85,7 @@ class Employee(models.Model):
     phone = models.CharField(
         max_length=15,
     )
-    # Designation = models.TextField(max_length= 50, blank=False, null=False)
+   
     address = models.TextField(max_length=200, blank=True, null=True)
     country = models.CharField(max_length=100, blank=True, null=True)
     state = models.CharField(max_length=100, null=True, blank=True)
@@ -167,6 +168,11 @@ class Employee(models.Model):
         This method is used to return the department of the employee
         """
         return getattr(getattr(self, "employee_work_info", None), "department_id", None)
+    
+    def get_designation(self):
+        return getattr(getattr(self,"employee_work_info",None),"designation_id",None)
+    
+    
 
     def get_shift(self):
         """
@@ -572,6 +578,15 @@ class EmployeeWorkInformation(models.Model):
         blank=True,
         verbose_name=_("Department"),
     )
+
+    designation_id = models.ForeignKey(
+        Designation,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name=_("Designation"),
+    )
+
     work_type_id = models.ForeignKey(
         WorkType,
         on_delete=models.PROTECT,

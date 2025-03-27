@@ -2036,6 +2036,19 @@ def designation_view(request):
         { "designations": designations},
     )
 
+@login_required
+@permission_required("base.delete_designation")  # Remove raise_exception=True
+def delete_designation(request, designation_id):
+    """
+    This method is used to delete a designation.
+    """
+    if request.method == "POST":
+        designation = get_object_or_404(Designation, id=designation_id)
+        designation.delete()
+        return JsonResponse({"success": True})  # HTMX expects a response
+    
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
 
 @login_required
 @hx_request_required
