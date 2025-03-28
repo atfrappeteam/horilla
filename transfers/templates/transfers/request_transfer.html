@@ -1,48 +1,83 @@
-{% load i18n %}
-{% load static %}
-<head>
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-</head>
-<div class="container">
-    <h2>Request Employee Transfer</h2>
+{% extends 'index.html' %}
+{% block content %}
+{% load i18n %} {% load static %}
 
-    {% if messages %}
-        <div class="alert alert-info">
-            {% for message in messages %}
-                <p class="{{ message.tags }}">{{ message }}</p>
-            {% endfor %}
+<div class="oh-wrapper">
+    <div class="oh-general__tab-target oh-profile-section mb-4" id="transfer">
+        <div class="oh-profile-section__card">
+            <form method="POST" action="{% url 'request_transfer' %}" class="oh-form" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <h1 class="oh-main__titlebar-title fw-bold mb-4">
+                    {% trans "Request Employee Transfer" %}
+                </h1>
+
+                {% if messages %}
+                    <div class="oh-alert oh-alert--info">
+                        {% for message in messages %}
+                            <p class="{{ message.tags }}">{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="oh-general__tabs">
+                    <ul class="oh-general__tabs-nav">
+                        <li class="oh-general__tab">
+                            <a href="#" class="oh-general__tab-link oh-general__tab-link--active">
+                                {% trans "Employee Transfer Information" %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="oh-general__tab-content oh-profile-section__card p-4">
+                    <div class="row">
+                        <div class="col-12 col-sm-12 col-md-6 col-lg-6 mb-3">
+                            <label class="oh-label" for="{{ form.employee.id_for_label }}">{% trans "Employee" %}</label>
+                            {{ form.employee }}
+                            {{ form.employee.errors }}
+                        </div>
+                        <div class="col-12 col-sm-12 col-md-6 col-lg-6 mb-3">
+                            <label class="oh-label" for="{{ form.new_department.id_for_label }}">{% trans "New Department" %}</label>
+                            {{ form.new_department }}
+                            {{ form.new_department.errors }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 col-sm-12 col-md-6 col-lg-6 mb-3">
+                            <label class="oh-label" for="{{ form.new_designation.id_for_label }}">{% trans "New Designation" %}</label>
+                            {{ form.new_designation }}
+                            {{ form.new_designation.errors }}
+                        </div>
+                        <div class="col-12 col-sm-12 col-md-6 col-lg-6 mb-3">
+                            <label class="oh-label" for="{{ form.new_location.id_for_label }}">{% trans "New Location" %}</label>
+                            {{ form.new_location }}
+                            {{ form.new_location.errors }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                            <label class="oh-label" for="{{ form.reason.id_for_label }}">{% trans "Reason" %}</label>
+                            <textarea class="oh-input w-100" name="{{ form.reason.name }}" id="{{ form.reason.id_for_label }}">{{ form.reason.value|default_if_none:'' }}</textarea>
+                            {{ form.reason.errors }}
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="mt-5 mb-3 d-flex flex-row-reverse">
+                <div class="col-lg-12 d-flex flex-row-reverse">
+                    <button type="submit" class="oh-btn oh-btn--secondary">
+                        {% trans "Submit Transfer Request" %}
+                    </button>
+                </div>
+            </form>
         </div>
-    {% endif %}
-
-    <form method="POST" action="{% url 'request_transfer' %}">
-        {% csrf_token %}
-
-        <div class="form-group">
-            <label for="employee">Employee:</label>
-            {{ form.employee }}
-        </div>
-
-        <div class="form-group">
-            <label for="new_department">New Department:</label>
-            {{ form.new_department }}
-        </div>
-
-        <div class="form-group">
-            <label for="new_designation">New Designation:</label>
-            {{ form.new_designation}}
-        </div>
-
-        <div class="form-group">
-            <label for="new_location">New Location:</label>
-            {{ form.new_location}}
-        </div>
-
-        <div class="form-group">
-            <label for="reason">Reason:</label>
-            {{ form.reason }}
-        </div>
-<!--        {{ form.as_p }}-->
-
-        <button type="submit" class="btn btn-primary">Submit Transfer Request</button>
-    </form>
+    </div>
 </div>
+
+<script>
+    // You can add JavaScript here to enhance the dropdown if needed
+</script>
+{% endblock content %}

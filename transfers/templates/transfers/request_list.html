@@ -1,65 +1,146 @@
-{% load i18n%}
-{% load static%}
-<head>
+{% extends 'index.html' %}
+{% block content %}
+{% load i18n %}
+{% load static %}
+{% load basefilters %}
 
-</head>
+<style>
+    .oh-sticky-table-wrapper {
+        display: block;
+        overflow-x: auto;
+    }
 
-<div class="container">
-    <h2>Employee Transfer Requests</h2>
-    <!--    {%csrf_token%}-->
+    .oh-sticky-table {
+        width: 100%; /* Or auto, depending on your content */
+        border-collapse: collapse;
+    }
 
-    {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-        <li class="{{ message.tags }}">{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+    .oh-sticky-table th,
+    .oh-sticky-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #ddd;
+        white-space: nowrap;
+    }
 
-    {% if transfers %}
-    <table class="table">
-        <thead>
-        <tr>
-            <th>Employee</th>
-            <th>Current Department</th>
-            <th>New Department</th>
-            <th>Status</th>
-            <th>Requested By</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for transfer in transfers %}
-        <tr>
-            <td>{{ transfer.employee }}</td>
-            <td>{{ transfer.current_department }}</td>
-            <td>{{ transfer.new_department}}</td>
-            <td>{{ transfer.status }}</td>
-            <td>{{ transfer.requests_by.username }}</td>
-            <td>
-                {% if transfer.status == "Requested" %}
-                <a href="{% url 'process_transfer' transfer.id %}" class="btn btn-info">Process</a>
-                <a href="{% url 'cancelled_transfer' transfer.id %}" class="btn btn-warning">Cancel</a>
+    .oh-sticky-table th:nth-child(1), /* Employee Column Header */
+    .oh-sticky-table td:nth-child(1) /* Employee Column Data */ {
+        position: sticky;
+        left: 0;
+        background-color: #fff; /* Match table background */
+        z-index: 2; /* Ensure it's above other cells during scroll */
+        border-right: 1px solid #ddd; /* Optional: Add a visual separator */
+    }
 
-                {% elif transfer.status == "Processed" %}
-                <a href="{% url 'approved_transfer' transfer.id %}" class="btn btn-success">Approve</a>
-                <a href="{% url 'rejected_transfer' transfer.id %}" class="btn btn-danger">Reject</a>
-                <a href="{% url 'cancelled_transfer' transfer.id %}" class="btn btn-warning">Cancel</a>
+    /* Adjust styles for the action column if you want it sticky on the right */
+    /* .oh-sticky-table th:last-child, */
+    /* .oh-sticky-table td:last-child { */
+    /* position: sticky; */
+    /* right: 0; */
+    /* background-color: #fff; */
+    /* z-index: 2; */
+    /* border-left: 1px solid #ddd; */
+    /* } */
+</style>
 
-                {% elif transfer.status == "Approved" %}
-                <span class="badge badge-success">Approved</span>
-                <a href="{% url 'cancelled_transfer' transfer.id %}" class="btn btn-warning">Cancel</a>
-
-                {% else %}
-                <span class="badge badge-secondary">Processed</span>
+<div class="oh-wrapper">
+    <div class="oh-main__content">
+        <div class="oh-main__titlebar">
+            <h1 class="oh-main__titlebar-title">
+                {% trans "Employee Transfer Requests" %}
+            </h1>
+        </div>
+        <div class="oh-card">
+            <div class="oh-card__header">
+                <h3 class="oh-card__title">{% trans "Transfer Request List" %}</h3>
+            </div>
+            <div class="oh-card__body">
+                {% if messages %}
+                <ul class="oh-alerts">
+                    {% for message in messages %}
+                    <li class="oh-alert oh-alert--{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
                 {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
 
-        </tbody>
-    </table>
-    {% else %}
-    <p>No transfer requests found.</p>
-    {% endif %}
+                {% if transfers %}
+                <div class="oh-table-responsive oh-sticky-table-wrapper">
+                    <table class="oh-table oh-sticky-table">
+                        <thead>
+                        <tr>
+                            <th>{% trans "Employee" %}</th>
+                            <th>{% trans "Current Department" %}</th>
+                            <th>{% trans "New Department" %}</th>
+                            <th>{% trans "Current Location" %}</th>
+                            <th>{% trans "New Location" %}</th>
+                            <th>{% trans "Current Designation" %}</th>
+                            <th>{% trans "New Designation" %}</th>
+                            <th>{% trans "Date" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Requested By" %}</th>
+                            <th>{% trans "Actions" %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for transfer in transfers %}
+                        <tr>
+                            <td>{{ transfer.employee }}</td>
+                            <td>{{ transfer.current_department }}</td>
+                            <td>{{ transfer.new_department}}</td>
+                            <td>{{ transfer.current_location}}</td>
+                            <td>{{ transfer.new_location}}</td>
+                            <td>{{ transfer.current_designation}}</td>
+                            <td>{{ transfer.new_designation}}</td>
+                            <td>{{ transfer.date_transfer|date:"d M Y" }}</td>
+                            <td>
+                                {% if transfer.status == "Requested" %}
+                                    <span class="oh-badge oh-badge--info">{% trans "Requested" %}</span>
+                                {% elif transfer.status == "Processed" %}
+                                    <span class="oh-badge oh-badge--secondary">{% trans "Processed" %}</span>
+                                {% elif transfer.status == "Approved" %}
+                                    <span class="oh-badge oh-badge--success">{% trans "Approved" %}</span>
+                                {% elif transfer.status == "Rejected" %}
+                                    <span class="oh-badge oh-badge--danger">{% trans "Rejected" %}</span>
+                                {% elif transfer.status == "Cancelled" %}
+                                    <span class="oh-badge oh-badge--warning">{% trans "Cancelled" %}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ transfer.requests_by.username }}</td>
+                            <td>
+                                <div class="oh-btn-group">
+                                    {% if transfer.status == "Requested" %}
+                                        <a href="{% url 'process_transfer' transfer.id %}" class="oh-btn oh-btn--info oh-btn--small">{% trans "Process" %}</a>
+                                        <a href="{% url 'cancelled_transfer' transfer.id %}" class="oh-btn oh-btn--warning oh-btn--small">{% trans "Cancel" %}</a>
+
+                                    {% elif transfer.status == "Processed" %}
+                                        <a href="{% url 'approved_transfer' transfer.id %}" class="oh-btn oh-btn--success oh-btn--small">{% trans "Approve" %}</a>
+                                        <a href="{% url 'rejected_transfer' transfer.id %}" class="oh-btn oh-btn--danger oh-btn--small">{% trans "Reject" %}</a>
+                                        <a href="{% url 'cancelled_transfer' transfer.id %}" class="oh-btn oh-btn--warning oh-btn--small">{% trans "Cancel" %}</a>
+
+                                    {% elif transfer.status == "Approved" %}
+                                        <a href="{% url 'cancelled_transfer' transfer.id %}" class="oh-btn oh-btn--warning oh-btn--small">{% trans "Cancel" %}</a>
+
+                                    {% elif transfer.status == "Rejected" %}
+                                        <a href="{% url 'cancelled_transfer' transfer.id %}" class="oh-btn oh-btn--warning oh-btn--small">{% trans "Cancel" %}</a>
+
+                                    {% elif transfer.status == "Cancelled" %}
+                                        <span class="oh-text--muted">{% trans "Cancelled" %}</span>
+
+                                    {% else %}
+                                        <span class="oh-badge oh-badge--secondary">{% trans "Processed" %}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="oh-text--muted">{% trans "No transfer requests found." %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
+
+{% endblock content %}
