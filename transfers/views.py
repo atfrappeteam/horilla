@@ -33,8 +33,8 @@ def transfer_list(request):
 def approved_transfer(request, transfer_id):
     transfer = get_object_or_404(EmployeeTransfer, id=transfer_id)
 
-    if transfer.status != "Pending":
-        messages.warning(request, "This transfer request is already processed.")
+    if transfer.status in ["Approve", "Reject", "Cancelled"]:
+        messages.warning(request, "This request is already processed.")
         return redirect("transfer_list")
 
     transfer.approve_transfer(request.user)
@@ -46,11 +46,11 @@ def approved_transfer(request, transfer_id):
 def cancelled_transfer(request, transfer_id):
     transfer = get_object_or_404(EmployeeTransfer, id=transfer_id)
 
-    if transfer.status != "Pending":
-        messages.warning(request, "This transfer request is already processed.")
+    if transfer.status in ["Cancelled"]:
+        messages.warning(request, "This request is already cancelled.")
         return redirect("transfer_list")
 
-    transfer.cancel_transfer()  # Remove unnecessary argument
+    transfer.cancel_transfer(request.user)  # Remove unnecessary argument
     messages.success(request, f"The transfer of employee {transfer.employee} has been canceled.")
     return redirect("transfer_list")
 
@@ -59,7 +59,7 @@ def cancelled_transfer(request, transfer_id):
 def rejected_transfer(request, transfer_id):
     transfer = get_object_or_404(EmployeeTransfer, id=transfer_id)
 
-    if transfer.status != "Pending":
+    if transfer.status in ["Approve", "Reject", "Cancelled"]:
         messages.warning(request, "This transfer request is already processed.")
         return redirect("transfer_list")
 
