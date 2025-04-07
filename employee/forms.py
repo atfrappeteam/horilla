@@ -48,6 +48,7 @@ from employee.models import (
     NoteFiles,
     Policy,
     PolicyMultipleFile,
+    DailyWorkSummary,
 )
 from horilla import horilla_middlewares
 from horilla_audit.models import AccountBlockUnblock
@@ -785,3 +786,75 @@ class EmployeeGeneralSettingPrefixForm(forms.ModelForm):
             "badge_id_prefix": forms.TextInput(attrs={"class": "oh-input w-100"}),
             "company_id": forms.Select(attrs={"class": "oh-select oh-select-2 w-100"}),
         }
+
+# class DailyWorkSummaryForm(forms.ModelForm):
+#     class Meta:
+#         model = DailyWorkSummary
+#         fields = ['name', 'users', 'send_email_at', 'holiday_list', 'subject', 'message']
+#         widgets = {
+#             'send_email_at': forms.TimeInput(attrs={'type': 'time'}),
+#             'message': forms.Textarea(attrs={'rows': 4}),
+#         }
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         # Assuming 'users' is a foreign key to Employee model, adjust this field to show emails
+#         self.fields['users'].queryset = Employee.objects.all()  # Adjust to your model if needed
+#         self.fields['users'].label_from_instance = lambda obj: obj.email  # Display emails instead of names
+#       # You can customize the save method if needed, to ensure proper handling of 'users'
+#     def save(self, commit=True):
+#         # First save the DailyWorkSummary instance without users
+#         instance = super().save(commit=False)
+
+#         if commit:
+#             instance.save()  # Save the instance to get an ID
+#             # Now get the IDs of the users and set them properly
+#             if 'users' in self.cleaned_data:
+#                 # Extracting only the ids from the selected Employee objects
+#                 user_ids = [user.id for user in self.cleaned_data['users']]
+#                 instance.users.set(user_ids)  # Set the users using their IDs
+
+#         return instance
+
+
+
+
+
+class DailyWorkSummaryForm(forms.ModelForm):
+    class Meta:
+        model = DailyWorkSummary
+        fields = ['name', 'users', 'send_email_at', 'holiday_list', 'subject', 'message']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter summary name'}),
+            'users': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'send_email_at': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control timepicker'}),
+            'holiday_list': forms.HiddenInput(),  # Hidden field controlled by Flatpickr
+            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter email subject'}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Enter your message'}),
+        }
+
+    def clean_holiday_list(self):
+        holiday_list = self.cleaned_data.get('holiday_list', '')
+        date_pattern = r'^\d{4}-\d{2}-\d{2}(,\s*\d{4}-\d{2}-\d{2})*$'
+
+        if holiday_list and not re.match(date_pattern, holiday_list):
+            raise forms.ValidationError("Enter dates in YYYY-MM-DD format, separated by commas.")
+
+        return holiday_list  # Store as a string
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     employees = Employee.objects.all()
+    #     choices = [(emp.id, emp.email) for emp in employees]
+    #     self.fields['users'].choices = choices  
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['users'].queryset = User.objects.all()
+        self.fields['users'].label_from_instance = lambda obj: obj.email
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if commit:
+            instance.save()
+            if 'users' in self.cleaned_data:
+                instance.users.set(self.cleaned_data['users'])
+        return instance

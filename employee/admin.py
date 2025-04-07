@@ -18,6 +18,8 @@ from employee.models import (
     EmployeeWorkInformation,
     Policy,
     PolicyMultipleFile,
+    DailyWorkSummary,
+
 )
 
 # Register your models here.
@@ -27,6 +29,7 @@ admin.site.register(EmployeeBankDetails)
 admin.site.register(EmployeeWorkInformation, SimpleHistoryAdmin)
 admin.site.register([EmployeeNote, EmployeeTag, PolicyMultipleFile, Policy, BonusPoint])
 admin.site.register([DisciplinaryAction, Actiontype])
+admin.site.register(DailyWorkSummary)
 
 
 from django.contrib import admin

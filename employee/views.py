@@ -39,12 +39,17 @@ from django.utils import timezone
 from django.utils.translation import gettext as __
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
+from django.views.generic import ListView
 
 from accessibility.decorators import enter_if_accessible
 from accessibility.methods import update_employee_accessibility_cache
 from accessibility.middlewares import ACCESSIBILITY_CACHE_USER_KEYS
 from accessibility.models import DefaultAccessibility
 from base.forms import ModelForm
+from django.core.paginator import Paginator
+from django.db.models import Q  
+
+from .scheduler import schedule_daily_work_summaries 
 from base.methods import (
     choosesubordinates,
     filtersubordinates,
@@ -84,6 +89,8 @@ from employee.forms import (
     EmployeeWorkInformationForm,
     EmployeeWorkInformationUpdateForm,
     excel_columns,
+    DailyWorkSummaryForm,
+
 )
 from employee.methods.methods import (
     bulk_create_department_import,
@@ -109,6 +116,7 @@ from employee.models import (
     EmployeeTag,
     EmployeeWorkInformation,
     NoteFiles,
+    DailyWorkSummary,
 )
 from horilla.decorators import (
     hx_request_required,
@@ -3682,3 +3690,137 @@ def employee_tag_update(request, tag_id):
         "base/employee_tag/employee_tag_form.html",
         {"form": form, "tag_id": tag_id},
     )
+
+
+
+class DailyWorkSummaryListView(ListView):
+    model = DailyWorkSummary
+    template_name = "employee/daily_work_summary/daily_work_summary.html"
+
+
+def daily_work_summary_list(request):
+    page_size = request.GET.get("page_size", 10)
+
+    try:
+        page_size = int(page_size)
+    except ValueError:
+        page_size = 10
+
+    # summaries = DailyWorkSummary.objects.all().order_by("-created_at")
+    ordering = request.GET.get("ordering", "-created_at")
+    summaries = DailyWorkSummary.objects.all().order_by(ordering)
+
+
+
+    # Apply search filter (just one!)
+    search_query = request.GET.get("search")
+    if search_query:
+      summaries = summaries.filter(
+        Q(name__icontains=search_query) |
+        Q(users__email__icontains=search_query) |
+        Q(subject__icontains=search_query) |
+        Q(message__icontains=search_query) |
+        Q(send_email_at__icontains=search_query)
+    ).distinct()
+
+    # if search_query:
+    #     summaries = summaries.filter(
+    #         Q(name__icontains=search_query) |
+    #         Q(users__email__icontains=search_query) |
+    #         Q(subject__icontains=search_query) |
+    #         Q(message__icontains=search_query)
+    #     ).distinct()
+
+    # Apply advanced filters
+    name = request.GET.get("name")
+    user = request.GET.get("user")
+    send_email_at = request.GET.get("send_email_at")
+    subject = request.GET.get("subject")
+    message=request.GET.get("message")
+
+    if name:
+        summaries = summaries.filter(name=name)
+    if user:
+        summaries = summaries.filter(users__email=user)
+    if send_email_at:
+        summaries = summaries.filter(send_email_at=send_email_at)
+    if subject:
+        summaries = summaries.filter(subject=subject)
+    if message:
+        summaries = summaries.filter(message=message)
+
+    paginator = Paginator(summaries, page_size)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "employee/daily_work_summary/daily_work_summary_list.html", {
+        "summaries": page_obj,
+        "page_size": page_size,
+        "distinct_names": DailyWorkSummary.objects.values_list("name", flat=True).distinct(),
+        "distinct_users": DailyWorkSummary.objects.values_list("users__email", flat=True).distinct(),
+        "distinct_send_email_times": DailyWorkSummary.objects.values_list("send_email_at", flat=True).distinct(),
+        "distinct_subjects": DailyWorkSummary.objects.values_list("subject", flat=True).distinct(),
+        "page_range": paginator.page_range,
+        "total_pages": paginator.num_pages,
+        "search_query": search_query or "",
+    })
+
+
+def daily_work_summary_edit(request, summary_id):
+    summary = get_object_or_404(DailyWorkSummary, id=summary_id)
+    form = DailyWorkSummaryForm(request.POST or None, instance=summary)
+
+    if request.method == "POST":
+        if form.is_valid():
+            form.save()
+
+            if request.headers.get('HX-Request'):
+                response = HttpResponse()
+                response['HX-Redirect'] = reverse('daily_work_summary_list')
+                return response
+
+            return redirect("employee/daily_work_summary/daily_work_summary_list")
+
+    if request.headers.get('HX-Request'):
+        return render(request, "employee/daily_work_summary/daily_work_summary_form.html", {
+            "form": form,
+            "edit": True,
+            "summary_id": summary.id
+        })
+
+    return redirect("employee/daily_work_summary/daily_work_summary_list")
+
+
+
+
+def daily_work_summary_delete(request, summary_id):
+    summary = get_object_or_404(DailyWorkSummary, id=summary_id)
+    summary.delete()
+    
+    if request.headers.get('HX-Request'):
+        return HttpResponse("")  # HTMX will remove the row from the table dynamically
+    return redirect("employee/daily_work_summary/daily_work_summary_list")  # Redirect if not using HTMX
+
+
+def daily_work_summary_create(request):
+    form = DailyWorkSummaryForm(request.POST or None)
+
+    if request.method == "POST":
+        if form.is_valid():
+            form.save()
+            schedule_daily_work_summaries()
+
+            if request.headers.get('HX-Request'):
+                response = HttpResponse()
+                response['HX-Redirect'] = reverse('daily_work_summary_list')
+                return response
+
+            return redirect("employee/daily_work_summary/daily_work_summary_list")
+
+        else:
+            print("❌ Form errors:", form.errors)
+
+    if request.headers.get('HX-Request'):
+        return render(request, "employee/daily_work_summary/daily_work_summary_form.html", {"form": form})
+
+    return render(request, "index.html", {"form": form})

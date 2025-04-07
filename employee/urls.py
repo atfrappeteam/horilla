@@ -11,6 +11,8 @@ from employee import not_in_out_dashboard, policies, views
 from employee.forms import DisciplinaryActionForm
 from employee.models import DisciplinaryAction, Employee, EmployeeTag
 from horilla_documents.models import DocumentRequest
+from .views import daily_work_summary_list, daily_work_summary_create,daily_work_summary_edit,daily_work_summary_delete,DailyWorkSummaryListView 
+
 
 urlpatterns = [
     path("get-language-code/", views.get_language_code, name="get-language-code"),
@@ -421,4 +423,21 @@ urlpatterns = [
         name="employee-tag-delete",
         kwargs={"model": EmployeeTag, "HttpResponse": True},
     ),
+    # path('daily-work-summary/', DailyWorkSummaryListView.as_view(), name='daily_work_summary_list'),
+    # path('daily-work-summary/create/', daily_work_summary_create, name='daily_work_summary_create'),
+
+    # path('daily-work-summary/', DailyWorkSummaryListView.as_view(), name='daily_work_summary'),
+    # path('daily-work-summary/', daily_work_summary_create, name='daily_work_summary_create'),
+    # path('daily-work-summary/', DailyWorkSummaryListView.as_view(), name='daily_work_summary_list'),
+     # List view for displaying all daily work summaries
+    path('daily-work-summary/', DailyWorkSummaryListView.as_view(), name='daily_work_summary'),
+
+    # API route for fetching the list (optional if using ListView)
+    path('daily-work-summary/list/', daily_work_summary_list, name='daily_work_summary_list'),
+
+    # Route for creating a new daily work summary
+    path('daily-work-summary/create/', daily_work_summary_create, name='daily_work_summary_create'),
+    path("daily-work-summary/edit/<int:summary_id>/", daily_work_summary_edit, name="daily_work_summary_edit"), 
+    path("daily-work-summary/delete/<int:summary_id>/", daily_work_summary_delete, name="daily_work_summary_delete"),
+
 ]

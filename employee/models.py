@@ -939,6 +939,21 @@ class EmployeeGeneralSetting(HorillaModel):
     company_id = models.ForeignKey(Company, null=True, on_delete=models.CASCADE)
     objects = HorillaCompanyManager("company_id")
 
+class DailyWorkSummary(models.Model):
+    name = models.CharField(max_length=255)
+    # enabled = models.BooleanField(default=True)
+    users = models.ManyToManyField(User, related_name="daily_work_summaries")
+    send_email_at = models.TimeField()
+    holiday_list = models.TextField(blank=True, null=True)
+
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
 
 class ProfileEditFeature(HorillaModel):
     """
