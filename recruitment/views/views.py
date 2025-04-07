@@ -34,10 +34,12 @@ from django.core.paginator import Paginator
 from django.db.models import Case, IntegerField, ProtectedError, Q, When
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_POST
 
 from base.backends import ConfiguredEmailBackend
 from base.context_processors import check_candidate_self_tracking
@@ -96,7 +98,7 @@ from recruitment.forms import (
     StageCreationForm,
     StageNoteForm,
     StageNoteUpdateForm,
-    ToSkillZoneForm,
+    ToSkillZoneForm, InterviewRoundForm, InterviewFeedbackForm,
 )
 from recruitment.methods import recruitment_manages
 from recruitment.models import (
@@ -114,7 +116,7 @@ from recruitment.models import (
     SkillZoneCandidate,
     Stage,
     StageFiles,
-    StageNote,
+    StageNote, InterviewRound, InterviewFeedback,
 )
 from recruitment.views.paginator_qry import paginator_qry
 
@@ -3561,3 +3563,102 @@ def employee_profile_interview_tab(request):
     ).order_by("is_today", "-interview_date", "interview_time")
 
     return render(request, "tabs/scheduled_interview.html", {"interviews": interviews})
+
+
+@login_required
+def create_interview_round(request):
+    """
+    View to handle the creation of a new Interview Round.
+    Uses Django messages to provide feedback to the user.
+    """
+    if request.method == "POST":
+        form = InterviewRoundForm(request.POST)
+        if form.is_valid():
+            interview_round = form.save()
+            messages.success(request, f"Interview round '{interview_round.round_name}' created successfully.")
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({"success": True})
+
+            return redirect(reverse("list_interview_rounds"))
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                html = render_to_string("candidate/create_interview_round_form.html", {"form": form}, request=request)
+                return JsonResponse({"success": False, "html": html})
+            messages.error(request, "Error: Please correct the form errors and try again.")
+    else:
+        form = InterviewRoundForm()
+
+    return render(request, "candidate/create_interview_round_form.html", {"form": form})
+
+def list_interview_rounds(request):
+    """
+    View to list all interview rounds.
+    """
+    interview_rounds = InterviewRound.objects.all().order_by("-id")  # Fetch all rounds, ordered by latest first
+    return render(request, "candidate/list_interview_rounds.html", {"interview_rounds": interview_rounds})
+
+def edit_interview_round(request, round_id):
+    interview_round = get_object_or_404(InterviewRound, pk=round_id)
+    form = InterviewRoundForm(instance=interview_round)
+
+    if request.method == "POST":
+        form = InterviewRoundForm(request.POST, instance=interview_round)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+    return render(request, "candidate/edit_interview_round.html", {"form": form, "interview_round": interview_round,})
+
+@csrf_exempt
+def delete_interview_round(request, pk):
+    print("The delete method is called.")
+    if request.method == 'POST':
+        try:
+            interview_round = InterviewRound.objects.get(pk=pk)
+            interview_round.delete()
+            return JsonResponse({"success": True})
+        except InterviewRound.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Not found"}, status=404)
+    return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
+
+
+def create_feedback(request):
+    skills = ["technical_skill", "communication", "problem", "attitude"]  # or dynamically fetch from SkillZone model
+
+    if request.method == 'POST':
+        form = InterviewFeedbackForm(request.POST)
+        if form.is_valid():
+            interview_feedback = form.save()
+            messages.success(request, f"Interview feedback '{interview_feedback.interview}' created successfully.")
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({"success": True})
+            return redirect("list_interview_feedback")
+        else:
+            if request.headers.get("x-requested-with") == 'XMLHttpRequest':
+                html = render_to_string("feedback/create_feedback.html", {"form": form, "skills": skills}, request=request)
+                return JsonResponse({"success": False, "html": html})
+            messages.error(request, "Error: Please correct the form errors and try again.")
+    else:
+        form = InterviewFeedbackForm()
+        skills = ["technical_skill", "communication", "problem", "attitude"]
+    return render(request, "feedback/create_feedback.html", {"form": form, "skills": skills})
+
+def list_interview_feedback(request):
+    interview_feedback = InterviewFeedback.objects.all().order_by('-id')
+    return render(request, 'feedback/interview_feedback_list.html', {"interview_feedback" : interview_feedback} )
+
+def get_interview_details(request, interview_id):
+    try:
+        interview = InterviewSchedule.objects.get(id=interview_id)
+        round_id = interview.interview_round.id if interview.interview_round else None
+        interviewer_ids = list(interview.employee_id.values_list('id', flat=True))
+        return JsonResponse({
+            'round_id': round_id,
+            'interviewer_ids': interviewer_ids
+        })
+    except InterviewSchedule.DoesNotExist:
+        return JsonResponse({'error': 'Interview not found'}, status=404)

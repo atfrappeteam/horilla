@@ -24,6 +24,7 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from base.backends import ConfiguredEmailBackend
@@ -42,10 +43,10 @@ from recruitment.forms import (
     RecruitmentDropDownForm,
     StageCreationForm,
     StageDropDownForm,
-    StageNoteForm,
+    StageNoteForm, InterviewRoundForm,
 )
 from recruitment.methods import recruitment_manages
-from recruitment.models import Candidate, Recruitment, Stage, StageNote
+from recruitment.models import Candidate, Recruitment, Stage, StageNote, InterviewType
 
 logger = logging.getLogger(__name__)
 

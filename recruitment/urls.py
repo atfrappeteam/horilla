@@ -656,6 +656,14 @@ urlpatterns = [
     path(
         "employee-interview-tab",
         views.employee_profile_interview_tab,
-        name="employee-interview-tab",
+        name="employee-interview-tab"
     ),
+    path("create-interview-round", views.create_interview_round, name ="create-interview-round"),
+    path("interview-rounds/", views.list_interview_rounds, name="list_interview_rounds"),
+    path("interview-round/edit/<int:round_id>/", views.edit_interview_round, name="edit_interview_round"),
+    path("interview-round/delete/<int:pk>/", views.delete_interview_round, name="delete_interview_round"),
+    path('get-interview-details/<int:interview_id>/', views.get_interview_details, name='get_interview_details'),
+    path("create-interview-feedback/", views.create_feedback, name="create-interview-round"),
+    path("interview_feedbacks/",views.list_interview_feedback, name="list_interview_feedback")
+
 ]

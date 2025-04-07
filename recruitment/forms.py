@@ -59,7 +59,7 @@ from recruitment.models import (
     Stage,
     StageFiles,
     StageNote,
-    SurveyTemplate,
+    SurveyTemplate, InterviewRound, InterviewFeedback,
 )
 
 logger = logging.getLogger(__name__)
@@ -1165,7 +1165,6 @@ class RejectedCandidateForm(ModelForm):
         self.fields["reject_reason_id"].empty_label = None
         self.fields["candidate_id"].widget = self.fields["candidate_id"].hidden_widget()
 
-
 class ScheduleInterviewForm(ModelForm):
     """
     ScheduleInterviewForm
@@ -1238,7 +1237,6 @@ class ScheduleInterviewForm(ModelForm):
         table_html = render_to_string("common_form.html", context)
         return table_html
 
-
 class SkillsForm(ModelForm):
     class Meta:
         model = Skill
@@ -1310,3 +1308,58 @@ class CandidateDocumentForm(ModelForm):
         context = {"form": self}
         table_html = render_to_string("common_form.html", context)
         return table_html
+
+
+class InterviewRoundForm(forms.ModelForm):
+
+    class Meta:
+        model = InterviewRound
+        fields = ['round_name', 'expected_skills', 'designation']
+        widgets = {
+            'round_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'expected_skills': forms.SelectMultiple(),
+            'designation': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+
+from django import forms
+from .models import InterviewFeedback, InterviewRound, Employee
+
+class InterviewFeedbackForm(forms.ModelForm):
+    class Meta:
+        model = InterviewFeedback
+        fields = "__all__"
+        exclude = ['average_score']
+
+        widgets = {
+            'interview': forms.Select(attrs={
+                'class': 'form-control', 'id': 'id_interview'
+            }),
+            'interview_round': forms.Select(attrs={
+                'class': 'form-control', 'id': 'id_interview_round',
+                'readonly': True, 'disabled': True,
+                'style': 'display:none;'
+            }),
+            'interviewer': forms.Select(attrs={
+                'class': 'form-control', 'id': 'id_interviewer',
+                'readonly': True, 'disabled': True,
+                'style': 'display:none;'
+            }),
+            'remark': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3
+            }),
+            'result': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Make sure interview_round and interviewer have data to match fetched IDs
+        self.fields['interview_round'].queryset = InterviewRound.objects.all()
+        self.fields['interviewer'].queryset = Employee.objects.all()
+
+        # Hide number inputs for rating fields (JS will update their values)
+        for field in ['technical_skill', 'communication', 'problem', 'attitude']:
+            self.fields[field].widget = forms.HiddenInput()

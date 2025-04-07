@@ -1,0 +1,153 @@
+{% load i18n %}
+{% load static %}
+
+<form method="POST" action="{% url 'edit_interview_round' interview_round.id %}" id="edit-interview-form" class="oh-form">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="{{ form.round_name.id_for_label }}" class="oh-label">{% translate "Round Name" %}</label>
+        {{ form.round_name }}
+        {{ form.round_name.errors }}
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.designation.id_for_label }}" class="oh-label">{% translate "Designation" %}</label>
+        {{ form.designation }}
+        {{ form.designation.errors }}
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ form.expected_skills.id_for_label }}" class="oh-label">{% translate "Expected Skills" %}</label>
+        {{ form.expected_skills }}
+        {{ form.expected_skills.errors }}
+    </div>
+
+    <button type="submit" class="oh-btn oh-btn--primary">
+        {% translate "Update" %}
+    </button>
+</form>
+
+<style>
+.oh-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.oh-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.oh-input,
+.form-control {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.oh-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.oh-btn:hover {
+    background-color: #0056b3;
+}
+
+.oh-btn--primary {
+    background-color: #007bff;
+}
+
+.oh-btn--primary:hover {
+    background-color: #0056b3;
+}
+
+/* Style for Designation Dropdown */
+#{{ form.designation.id_for_label }} {
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 30px;
+    width: 300px !important;
+}
+
+/* Fix Select2 dropdown z-index */
+.select2-container--open {
+    z-index: 9999 !important;
+}
+
+/* Fix Expected Skills fixed size (Aggressive) */
+#{{ form.expected_skills.id_for_label }}.select2-container {
+    width: 300px !important;
+}
+
+#{{ form.expected_skills.id_for_label }}.select2-container .select2-selection--multiple {
+    min-height: 38px !important;
+    overflow-x: hidden !important;
+    width: 300px !important; /* Aggressive */
+}
+
+#{{ form.expected_skills.id_for_label }}.select2-container .select2-selection--multiple .select2-selection__rendered {
+    display: block !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    width: 300px !important; /* Aggressive */
+}
+
+#{{ form.expected_skills.id_for_label }}.select2-container .select2-selection--multiple .select2-selection__choice {
+    max-width: 100% !important;
+}
+
+
+.select2-container .select2-search--inline {
+    float: left;
+    min-width: 491px;
+}
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: #888 transparent transparent transparent;
+    border-style: solid;
+    border-width: 5px 4px 0 4px;
+    height: 0;
+    left: 13rem;
+    margin-top: -2px;
+    position: relative;
+    top: 50%;
+    width: 0;
+}
+    .select2-container .select2-selection--single {
+    box-sizing: border-box;
+    cursor: pointer;
+    display: block;
+    height: 28px;
+    -moz-user-select: none;
+    user-select: none;
+    -webkit-user-select: none;
+    width: 500px;
+}
+</style>
+
+<script>
+    $(document).ready(function() {
+        const skillSelector = '#{{ form.expected_skills.auto_id }}';
+        const designationSelector = '#{{ form.designation.auto_id }}';
+
+        $(skillSelector).select2({
+            tags: true,
+            tokenSeparators: [',', ' '],
+            placeholder: "{% translate 'Enter skills...' %}"
+        });
+
+        $(designationSelector).select2();
+    });
+</script>
