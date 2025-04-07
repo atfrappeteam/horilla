@@ -74,6 +74,8 @@ INSTALLED_APPS = [
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 
 APSCHEDULER_RUN_NOW_TIMEOUT = 25  # Seconds
+SCHEDULER_AUTOSTART = True
+
 
 
 MIDDLEWARE = [
@@ -231,6 +233,12 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+EMAIL_USE_TLS = True 
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'dl143085@gmail.com'
+EMAIL_HOST_PASSWORD = 'abgt oabk sqss rpqb'
 
 # Production settings
 if not DEBUG:

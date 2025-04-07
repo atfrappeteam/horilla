@@ -1,0 +1,285 @@
+{% load static %}
+{% load i18n %}
+<style>
+    .padded-container {
+        padding: 2rem;
+    }
+</style>
+
+<div id="dailyWorkSummaryForm" class="container-fluid mt-4 px-4 py-4">
+    <div class="card shadow-sm p-4">
+        <form method="POST"
+      {% if edit %}
+          hx-post="{% url 'daily_work_summary_edit' summary_id %}"
+      {% else %}
+          hx-post="{% url 'daily_work_summary_create' %}"
+      {% endif %}
+      hx-target="#dailyWorkSummaryCreateModalTarget"
+      hx-swap="outerHTML"
+      hx-trigger="submit">
+
+            {% csrf_token %}
+
+            <h4 class="mb-4">{% trans "Create Daily Work Summary" %}</h4>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Name" %}</label>
+                    {{ form.name }}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Send Email At" %}</label>
+                    {{ form.send_email_at }}
+                </div>
+
+                <!-- <div class="col-md-12">
+                    <label class="form-label">{% trans "Employees" %}</label>
+                    {{ form.users }}
+                </div> -->
+                <div class="oh-input-group mb-3">
+                    <label for="id_users" class="mb-1">Select Employees (Emails)</label>
+                    {{ form.users.errors }}
+                    {{ form.users }}
+                </div>
+                
+
+                <div class="col-md-12">
+                    <label class="form-label">{% trans "Holiday List" %}</label>
+                    <div class="d-flex mb-2">
+                        <input type="date" id="holiday-list-picker" class="form-control me-2">
+                        <button type="button" class="btn btn-outline-primary" onclick="addDate()">Add</button>
+                    </div>
+                    <div id="selectedDatesContainer" class="mb-2"></div>
+                    <input type="hidden" id="id_holiday_list" name="holiday_list" value="{{ form.initial.holiday_list }}">
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">{% trans "Subject" %}</label>
+                    {{ form.subject }}
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">{% trans "Message" %}</label>
+                    {{ form.message }}
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end">
+                <button type="submit" class="btn btn-danger me-2">{% trans "Save" %}</button>
+                <button type="button" class="btn btn-secondary" onclick="history.back();">{% trans "Cancel" %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .date-box {
+        display: inline-block;
+        background-color: #f1f1f1;
+        padding: 5px 10px;
+        margin: 3px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .remove-btn {
+        color: #888;
+        background: transparent;
+        border: none;
+        font-size: 14px;
+        margin-left: 5px;
+        cursor: pointer;
+    }
+
+    .remove-btn:hover {
+        color: red;
+    }
+</style>
+
+<script>
+    let selectedDates = [];
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const hiddenInput = document.getElementById("id_holiday_list");
+        if (hiddenInput && hiddenInput.value) {
+            selectedDates = hiddenInput.value.split(',').map(d => d.trim()).filter(d => d);
+            updateDisplay();
+        }
+
+        const form = document.querySelector("#dailyWorkSummaryForm form");
+        if (form) {
+            form.addEventListener("submit", function () {
+                hiddenInput.value = selectedDates.join(',');
+            });
+        }
+    });
+
+    function addDate() {
+        const input = document.getElementById("holiday-list-picker");
+        const date = input.value.trim();
+        if (date && !selectedDates.includes(date)) {
+            selectedDates.push(date);
+            input.value = "";
+            updateDisplay();
+        }
+    }
+
+    function removeDate(index) {
+        selectedDates.splice(index, 1);
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        const container = document.getElementById("selectedDatesContainer");
+        const hiddenInput = document.getElementById("id_holiday_list");
+        container.innerHTML = "";
+        hiddenInput.value = selectedDates.join(',');
+
+        selectedDates.forEach((date, index) => {
+            const span = document.createElement("span");
+            span.className = "date-box";
+            span.innerHTML = `
+                ${date}
+                <button type="button" class="remove-btn" onclick="removeDate(${index})">&times;</button>
+            `;
+            container.appendChild(span);
+        });
+    }
+</script>
+
+
+<!-- {% load static %}
+{% load i18n %}
+
+<div id="dailyWorkSummaryForm">
+    <form method="POST" hx-post="{% url 'daily_work_summary_create' %}" 
+          hx-target="#dailyWorkSummaryCreateModalTarget" 
+          hx-swap="outerHTML"
+          hx-trigger="submit">
+        {% csrf_token %}
+
+        <div class="modal-header">
+            <h5 class="modal-title">{% trans "Create Daily Work Summary" %}</h5>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <label>{% trans "Name" %}</label>
+                {{ form.name }}
+            </div>
+
+            <div class="form-group">
+                <label>{% trans "Users" %}</label>
+                {{ form.users }}
+            </div>
+
+            <div class="form-group">
+                <label>{% trans "Send Email At" %}</label>
+                {{ form.send_email_at }}
+            </div>
+
+             Editable Holiday List -->
+            <!-- <div class="form-group">
+                <label>{% trans "Holiday List" %}</label>
+                <div class="d-flex mb-2">
+                    <input type="date" id="holiday-list-picker" class="form-control mr-2">
+                    <button type="button" class="btn btn-secondary" onclick="addDate()">Add</button>
+                </div>
+                <div id="selectedDatesContainer" class="mb-2"></div>
+                <input type="hidden" id="id_holiday_list" name="holiday_list" value="{{ form.initial.holiday_list }}">
+            </div>
+
+            <div class="form-group">
+                <label>{% trans "Subject" %}</label>
+                {{ form.subject }}
+            </div>
+
+            <div class="form-group">
+                <label>{% trans "Message" %}</label>
+                {{ form.message }}
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .date-box {
+        display: inline-block;
+        background-color: #f1f1f1;
+        padding: 5px 10px;
+        margin: 3px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .date-box .remove-btn {
+        color: #888;
+        background: transparent;
+        border: none;
+        font-size: 14px;
+        margin-left: 5px;
+        cursor: pointer;
+    }
+
+    .date-box .remove-btn:hover {
+        color: red;
+    }
+</style>
+
+<script>
+    let selectedDates = [];
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const hiddenInput = document.getElementById("id_holiday_list");
+        if (hiddenInput && hiddenInput.value) {
+            selectedDates = hiddenInput.value.split(',').map(d => d.trim()).filter(d => d);
+            updateDisplay();
+        }
+
+        const form = document.querySelector("#dailyWorkSummaryForm form");
+        if (form) {
+            form.addEventListener("submit", function () {
+                hiddenInput.value = selectedDates.join(',');
+            });
+        }
+    });
+
+    function addDate() {
+        const input = document.getElementById("holiday-list-picker");
+        const date = input.value.trim();
+        if (date && !selectedDates.includes(date)) {
+            selectedDates.push(date);
+            input.value = "";
+            updateDisplay();
+        }
+    }
+
+    function removeDate(index) {
+        selectedDates.splice(index, 1);
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        const container = document.getElementById("selectedDatesContainer");
+        const hiddenInput = document.getElementById("id_holiday_list");
+        container.innerHTML = "";
+        hiddenInput.value = selectedDates.join(',');
+
+        selectedDates.forEach((date, index) => {
+            const span = document.createElement("span");
+            span.className = "date-box";
+            span.innerHTML = `
+                ${date}
+                <button type="button" class="remove-btn" onclick="removeDate(${index})">&times;</button>
+            `;
+            container.appendChild(span);
+        });
+    }
+</script> --> 

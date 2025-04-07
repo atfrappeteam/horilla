@@ -1,0 +1,289 @@
+{% extends "index.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<style>
+    .custom-padding { padding: 2rem; }
+
+    .scrollable-dropdown {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .modal .form-label {
+        font-weight: 500;
+    }
+
+    .modal-content {
+        border-radius: 10px;
+    }
+
+    .hidden { display: none; }
+
+    .pagination-container {
+        margin-top: 20px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        padding-right: 2rem;
+    }
+
+    .pagination .page-link {
+        color: #333;
+        border: 1px solid #dee2e6;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #6c63ff;
+        border-color: #6c63ff;
+        color: white;
+    }
+
+    .pagination-select {
+        width: 60px;
+        height: 36px;
+        overflow-y: auto;
+        max-height: 200px;
+    }
+</style>
+
+<section class="oh-wrapper custom-padding">
+    <div class="oh-main__titlebar mb-3">
+        <div class="oh-main__titlebar mb-3 d-flex justify-content-between align-items-center">
+            <h1 class="oh-main__titlebar-title fw-bold">{% trans "Daily Work Summary List" %}</h1>
+        
+            <div class="d-flex align-items-center ms-auto gap-2">
+                <!-- Search Box -->
+                <form method="get" class="d-flex align-items-center mb-0">
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Search..." value="{{ request.GET.search }}"
+                           style="width: 200px;">
+                </form>
+        
+                <!-- Filter Button -->
+                <button class="btn btn-outline-secondary d-flex align-items-center"
+                        data-bs-toggle="modal"
+                        data-bs-target="#filterModal">
+                    <ion-icon name="filter-outline" class="me-1"></ion-icon>
+                    {% trans "Filter" %}
+                </button>
+        
+                <!-- Create Button -->
+                <button class="oh-btn oh-btn--secondary oh-btn--shadow"
+                        hx-get="{% url 'daily_work_summary_create' %}"
+                        hx-target="#dailyWorkSummaryCreateModalTarget"
+                        data-bs-toggle="modal"
+                        data-bs-target="#dailyWorkSummaryCreateModal">
+                    <ion-icon name="add-outline" class="me-1"></ion-icon>
+                    {% trans "Create Daily Work Summary" %}
+                </button>
+            </div>
+        </div>
+        
+    
+
+    <!-- Summary Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                    <tr>
+                        <th style="width: 10%;">{% trans "Name" %}</th>
+                        <th style="width: 15%;">{% trans "Users" %}</th> <!-- Reduced -->
+                        <th style="width: 15%;">{% trans "Send Email At" %}</th> <!-- Increased -->
+                        <th style="width: 10%;">{% trans "Holiday List" %}</th>
+                        <th style="width: 15%;">{% trans "Subject" %}</th>
+                        <th style="width: 15%;">{% trans "Message" %}</th>
+                                        
+                    
+                    <th class="text-right" style="width:15%">
+                        Created At
+                        <a href="?ordering=created_at{% for key, value in request.GET.items %}{% if key != 'ordering' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Sort Ascending" style="text-decoration: none;">
+                            <span style="display: inline-block; transform: rotate(90deg); font-size: 16px; color: black;">→</span>
+                        </a>
+                        <a href="?ordering=-created_at{% for key, value in request.GET.items %}{% if key != 'ordering' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Sort Descending" style="text-decoration: none;">
+                            <span style="display: inline-block; transform: rotate(-90deg); font-size: 16px; color: black;">→</span>
+                        </a>
+                    </th>
+                    
+                    
+                    
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for summary in summaries %}
+                <tr>
+                    <td>{{ summary.name }}</td>
+                    <td>
+                        {% for user in summary.users.all %}
+                            {{ user.email }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{{ summary.send_email_at }}</td>
+                    <td>{{ summary.holiday_list|default:"-" }}</td>
+                    <td>{{ summary.subject }}</td>
+                    <td>{{ summary.message }}</td>
+                    <td>{{ summary.created_at }}</td>
+                    <td>
+                        <button class="btn btn-link p-0"
+                                hx-get="{% url 'daily_work_summary_edit' summary.id %}"
+                                hx-target="#dailyWorkSummaryCreateModalTarget"
+                                data-bs-toggle="modal"
+                                data-bs-target="#dailyWorkSummaryCreateModal">
+                            <ion-icon name="create-outline"></ion-icon>
+                        </button>
+                        <button hx-delete="{% url 'daily_work_summary_delete' summary.id %}"
+                                hx-confirm="Are you sure?"
+                                hx-trigger="click"
+                                hx-target="closest tr"
+                                hx-swap="outerHTML swap"
+                                class="btn btn-link p-0 text-danger">
+                            <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <nav>
+            <ul class="pagination">
+                <div class="d-flex align-items-center justify-content-end">
+                    <span class="me-2">Page</span>
+                    <select class="form-select pagination-select" onchange="goToPage(this.value)">
+                        {% for num in summaries.paginator.page_range %}
+                            <option value="{{ num }}" {% if summaries.number == num %}selected{% endif %}>{{ num }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="ms-2">of {{ summaries.paginator.num_pages }}</span>
+                </div>
+            </ul>
+        </nav>
+    </div>
+</section>
+
+<!-- Create Modal -->
+<div class="modal fade" id="dailyWorkSummaryCreateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div id="dailyWorkSummaryCreateModalTarget"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title">{% trans "Filter Daily Work Summary" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form method="get">
+                <div class="modal-body px-5 py-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label for="filterSelector" class="form-label">Filter By</label>
+                            <select id="filterSelector" class="form-select">
+                                <option value="">-- Select --</option>
+                                <option value="name" {% if request.GET.name %}selected{% endif %}>Name</option>
+                                <option value="user" {% if request.GET.user %}selected{% endif %}>User</option>
+                                <option value="send_email_at" {% if request.GET.send_email_at %}selected{% endif %}>Send Email At</option>
+                                <option value="subject" {% if request.GET.subject %}selected{% endif %}>Subject</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 hidden" id="filterNameContainer">
+                            <label for="filterName" class="form-label">Name</label>
+                            <select name="name" id="filterName" class="form-select scrollable-dropdown">
+                                <option value="">All</option>
+                                {% for name in distinct_names %}
+                                    <option value="{{ name }}" {% if request.GET.name == name %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 hidden" id="filterUserContainer">
+                            <label for="filterUser" class="form-label">User</label>
+                            <select name="user" id="filterUser" class="form-select scrollable-dropdown">
+                                <option value="">All</option>
+                                {% for user in distinct_users %}
+                                    <option value="{{ user }}" {% if request.GET.user == user %}selected{% endif %}>{{ user }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 hidden" id="filterSendEmailContainer">
+                            <label for="filterSendEmail" class="form-label">Send Email At</label>
+                            <select name="send_email_at" id="filterSendEmail" class="form-select scrollable-dropdown">
+                                <option value="">All</option>
+                                {% for time in distinct_send_email_times %}
+                                    <option value="{{ time }}" {% if request.GET.send_email_at == time %}selected{% endif %}>{{ time }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 hidden" id="filterSubjectContainer">
+                            <label for="filterSubject" class="form-label">Subject</label>
+                            <select name="subject" id="filterSubject" class="form-select scrollable-dropdown">
+                                <option value="">All</option>
+                                {% for subject in distinct_subjects %}
+                                    <option value="{{ subject }}" {% if request.GET.subject == subject %}selected{% endif %}>{{ subject }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top px-4 py-3 d-flex justify-content-between">
+                    <a href="{% url 'daily_work_summary_list' %}" class="btn btn-secondary">Reset</a>
+                    <button type="submit" class="btn btn-danger">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function changePageSize() {
+        const pageSize = document.getElementById("pageSize").value;
+        const url = new URL(window.location.href);
+        url.searchParams.set("page_size", pageSize);
+        window.location.href = url.href;
+    }
+
+    function goToPage(pageNumber) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("page", pageNumber);
+        window.location.href = url.toString();
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const filterSelector = document.getElementById("filterSelector");
+        const filters = {
+            name: document.getElementById("filterNameContainer"),
+            user: document.getElementById("filterUserContainer"),
+            send_email_at: document.getElementById("filterSendEmailContainer"),
+            subject: document.getElementById("filterSubjectContainer"),
+        };
+
+        filterSelector.addEventListener("change", function () {
+            const selected = this.value;
+            Object.values(filters).forEach(el => el.classList.add("hidden"));
+            if (filters[selected]) {
+                filters[selected].classList.remove("hidden");
+            }
+        });
+
+        if (filterSelector.value) {
+            filterSelector.dispatchEvent(new Event("change"));
+        }
+    });
+    
+</script>
+{% endblock %}

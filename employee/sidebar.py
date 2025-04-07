@@ -47,6 +47,11 @@ SUBMENUS = [
         "redirect": reverse("rotating-work-type-assign"),
         "accessibility": "employee.sidebar.rotating_work_type_accessibility",
     },
+     {
+        "menu": trans("Daily Work Summary"), 
+        "redirect": reverse("daily_work_summary_list"),  
+    },
+   
     {
         "menu": trans("Disciplinary Actions"),
         "redirect": reverse("disciplinary-actions"),

@@ -3,6 +3,8 @@ apps.py
 """
 
 from django.apps import AppConfig
+from apscheduler.schedulers.background import BackgroundScheduler
+
 
 
 class EmployeeConfig(AppConfig):
@@ -19,3 +21,11 @@ class EmployeeConfig(AppConfig):
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "employee"
+
+    def ready(self):
+        """Start the scheduler after Django is fully initialized."""
+       
+        from django.conf import settings
+        if settings.SCHEDULER_AUTOSTART:
+            from employee.scheduler import schedule_daily_work_summaries
+            schedule_daily_work_summaries()

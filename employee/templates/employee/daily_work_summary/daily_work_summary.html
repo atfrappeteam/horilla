@@ -1,0 +1,91 @@
+{% extends 'index.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<section class="oh-wrapper">
+    <div class="oh-main__titlebar">
+        <h1 class="oh-main__titlebar-title fw-bold">{% trans "Daily Work Summary" %}</h1>
+    </div>
+
+    <div class="oh-main__titlebar oh-main__titlebar--right">
+        <button class="btn btn-danger rounded-circle shadow-lg" 
+                style="width: 50px; height: 50px; font-size: 24px; position: fixed; bottom: 20px; right: 20px;"
+                data-bs-toggle="modal"
+                data-bs-target="#dailyWorkSummaryCreateModal"
+                hx-get="{% url 'daily_work_summary_create' %}" 
+                hx-target="#dailyWorkSummaryCreateModalTarget"
+                hx-trigger="click">
+            +
+        </button>
+    </div>
+</section>
+
+<div class="oh-wrapper">
+    {% if summaries %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>{% trans "Name" %}</th>
+                    <th>{% trans "Enabled" %}</th>
+                    <th>{% trans "Users" %}</th>
+                    <th>{% trans "Send Email At" %}</th>
+                    <th>{% trans "Holiday List" %}</th>
+                    <th>{% trans "Subject" %}</th>
+                    <th>{% trans "Message" %}</th>
+                    <th>{% trans "Created At" %}</th>
+                    <th>{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for summary in summaries %}
+                <tr>
+                    <td>{{ summary.name }}</td>
+                    <td>{{ summary.enabled|yesno:"✔,✖" }}</td>
+                    <td>
+                        {% for user in summary.users.all %}
+                            {{ user.username }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{{ summary.send_email_at }}</td>
+                    <td>
+                        {% if summary.holiday_list %}
+                            {{ summary.holiday_list|default:"-" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    
+                    <td>{{ summary.subject }}</td>
+                    <td>{{ summary.message }}</td>
+                    <td>{{ summary.created_at }}</td>
+                    <td>
+                        <a href="{% url 'daily_work_summary_list' %}" class="btn btn-info btn-sm">
+                            {% trans "View" %}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-center">{% trans "No records found." %}</p>
+    {% endif %}
+</div>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="dailyWorkSummaryCreateModal" tabindex="-1" aria-labelledby="dailyWorkSummaryCreateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dailyWorkSummaryCreateModalLabel">Daily Work Summary</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="dailyWorkSummaryCreateModalTarget">
+                <!-- Form content will be loaded dynamically here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
