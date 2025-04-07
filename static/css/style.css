@@ -400,6 +400,7 @@ form label {
     max-height: 90px !important;
     overflow: hidden;
     overflow-y: scroll;
+    min-width: 300px;
 }
 
 @media screen and (max-width: 575.98px) {
