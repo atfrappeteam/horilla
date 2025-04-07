@@ -29,6 +29,9 @@ from horilla.models import HorillaModel
 from horilla_audit.methods import get_diff
 from horilla_audit.models import HorillaAuditInfo, HorillaAuditLog
 
+from employee.models import Employee
+
+
 # Create your models here.
 
 
@@ -215,7 +218,7 @@ class Recruitment(HorillaModel):
                 )
 
         if self.end_date is not None and (
-            self.start_date is not None and self.start_date > self.end_date
+                self.start_date is not None and self.start_date > self.end_date
         ):
             raise ValidationError(
                 {"end_date": _("End date cannot be less than start date.")}
@@ -565,12 +568,12 @@ class Candidate(HorillaModel):
                 )
             self.stage_id = cancelled_stage
         if (
-            self.converted_employee_id
-            and Candidate.objects.filter(
-                converted_employee_id=self.converted_employee_id
-            )
-            .exclude(id=self.id)
-            .exists()
+                self.converted_employee_id
+                and Candidate.objects.filter(
+            converted_employee_id=self.converted_employee_id
+        )
+                .exclude(id=self.id)
+                .exists()
         ):
             raise ValidationError(_("Employee is uniques for candidate"))
 
@@ -903,6 +906,15 @@ class RecruitmentGeneralSetting(HorillaModel):
     company_id = models.ForeignKey(Company, on_delete=models.CASCADE, null=True)
 
 
+class InterviewRound(models.Model):
+    round_name = models.CharField(max_length=255, unique=True)
+    expected_skills = models.ManyToManyField("SkillZone", related_name="interview_rounds")
+    designation = models.ForeignKey("base.Designation", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.round_name
+
+
 class InterviewSchedule(HorillaModel):
     """
     Interview Scheduling Model
@@ -916,6 +928,7 @@ class InterviewSchedule(HorillaModel):
     )
     employee_id = models.ManyToManyField(Employee, verbose_name=_("Interviewer"))
     interview_date = models.DateField(verbose_name=_("Interview Date"))
+    interview_round = models.ForeignKey(InterviewRound, on_delete=models.SET_NULL, null=True, blank=True)
     interview_time = models.TimeField(verbose_name=_("Interview Time"))
     description = models.TextField(
         verbose_name=_("Description"), blank=True, max_length=255
@@ -1015,3 +1028,42 @@ class CandidateDocument(HorillaModel):
                 raise ValidationError(
                     {"document": _("Please upload {} file only.").format(format)}
                 )
+
+
+class InterviewFeedback(HorillaModel):
+    interview = models.ForeignKey('InterviewSchedule', on_delete=models.CASCADE)
+    interview_round = models.ForeignKey('InterviewRound', on_delete=models.CASCADE)
+    interviewer = models.ForeignKey(Employee, on_delete=models.CASCADE)
+
+    technical_skill = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    communication = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    problem = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    attitude = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+
+    average_score = models.FloatField(null=True, blank=True)
+
+    remark = models.TextField(blank=False, null=False)
+    result = models.CharField(
+        max_length=10,
+        choices=[
+            ('cleared', 'Cleared'),
+            ('rejected', 'Rejected'),
+            ('no show', 'No Show')
+        ]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('interview_round', 'interviewer')
+
+    def save(self, *args, **kwargs):
+        self.average_score = round((
+            self.technical_skill +
+            self.communication +
+            self.problem +
+            self.attitude
+        ) / 4, 2)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Feedback by {self.interviewer} for {self.interview} (Round: {self.interview_round})"

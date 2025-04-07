@@ -1,0 +1,50 @@
+{% extends "index.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-4">
+    <h3 class="mb-4">Interview Feedback List</h3>
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Interview</th>
+                <th>Round</th>
+                <th>Interviewer</th>
+                <th>Technical</th>
+                <th>Communication</th>
+                <th>Problem</th>
+                <th>Attitude</th>
+                <th>Avg. Score</th>
+                <th>Result</th>
+                <th>Remark</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for feedback in interview_feedback %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ feedback.interview }}</td>
+                <td>{{ feedback.interview_round }}</td>
+                <td>{{ feedback.interviewer }}</td>
+                <td>{{ feedback.technical_skill }}</td>
+                <td>{{ feedback.communication }}</td>
+                <td>{{ feedback.problem }}</td>
+                <td>{{ feedback.attitude }}</td>
+                <td>{{ feedback.average_score }}</td>
+                <td>{{ feedback.result|title }}</td>
+                <td>{{ feedback.remark }}</td>
+                <td>{{ feedback.created_at|date:"Y-m-d H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="12" class="text-center">No feedback submitted yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
