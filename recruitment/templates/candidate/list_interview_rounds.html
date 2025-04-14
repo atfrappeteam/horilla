@@ -15,9 +15,8 @@
             </button>
         </div>
 
-        <!-- Create Modal -->
         <div class="modal fade" id="createInterviewRoundModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-md">
+            <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable" style="top: 5%; transform: translateX(-50%);">
                 <div class="modal-content">
                     <div class="modal-header oh-modal-header">
                         <h5 class="modal-title oh-modal-title">{% translate "Create New Interview Round" %}</h5>
@@ -33,9 +32,8 @@
             </div>
         </div>
 
-        <!-- Edit Modal -->
         <div class="modal fade" id="editInterviewRoundModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-md">
+            <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable" style="top: 5%; transform: translateX(-50%);">
                 <div class="modal-content">
                     <div class="modal-header oh-modal-header">
                         <h5 class="modal-title oh-modal-title">{% translate "Edit Interview Round" %}</h5>
@@ -51,7 +49,6 @@
             </div>
         </div>
         <input type="hidden" id="csrfToken" value="{{ csrf_token }}">
-        <!-- Table -->
         <div class="card shadow p-3">
             <div class="card-body">
                 <div class="table-responsive">
@@ -97,7 +94,6 @@
     </div>
 </div>
 
-<!-- Styles -->
 <style>
     .modal {
         display: none;
@@ -129,9 +125,9 @@
     }
     .modal-dialog {
         position: fixed;
-        top: 12% !important;
+        top: 5%; /* Force it to the top (adjust percentage as needed) */
         left: 50%;
-        transform: translate(-50%, 0);
+        transform: translateX(-50%); /* Center horizontally */
         width: 60%;
         max-width: 700px;
         z-index: 1060 !important;
@@ -237,10 +233,10 @@
     }
 </style>
 
-<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function () {
     const createInterviewRoundModal = $("#createInterviewRoundModal");
@@ -263,9 +259,10 @@ $(document).ready(function () {
     // Close modal
     $(document).on("click", ".btn-close", () => {
         createInterviewRoundModal.modal("hide");
+        $("#editInterviewRoundModal").modal("hide"); // Also close edit modal if open
     });
 
-    // Handle form submission via AJAX
+    // Handle create form submission via AJAX
     $(document).on("submit", "#create-interview-form", function (e) {
         e.preventDefault();
 
@@ -311,12 +308,13 @@ $(document).ready(function () {
     $(document).on("click", ".openEditModalBtn", function () {
         const roundId = $(this).data("id");
         const url = "{% url 'edit_interview_round' 0 %}".replace("0", roundId);
+        const editModalFormContainer = $("#edit-modal-form-container");
 
         $.get(url, function (data) {
-            $("#edit-modal-form-container").html(data);
+            editModalFormContainer.html(data);
             $("#editInterviewRoundModal").modal("show");
         }).fail(function () {
-            alert("Failed to load the edit form.");
+            Swal.fire("Error!", "Failed to load the edit form.", "error");
         });
     });
 
@@ -335,13 +333,14 @@ $(document).ready(function () {
         $.post(url, data, function (response) {
             if (response.success) {
                 $("#editInterviewRoundModal").modal("hide");
-                location.reload();
+                Swal.fire("Success!", "Interview round updated successfully.", "success").then(() => {
+                    location.reload();
+                });
             } else {
-                alert("Update failed.");
-                console.log(response.errors);
+                $("#edit-modal-form-container").html(response.html); // Re-render form with validation errors
             }
         }).fail(function () {
-            alert("Error while submitting the form.");
+            Swal.fire("Error!", "Error while submitting the form.", "error");
         });
     });
 
@@ -349,13 +348,13 @@ $(document).on('click', '.delete-btn', function () {
     const roundId = $(this).data('id');
 
     Swal.fire({
-        text: "Are you sure you want to delete this interview round?",
+        text: "{% translate 'Are you sure you want to delete this interview round?' %}",
         icon: "question",
         showCancelButton: true,
         confirmButtonColor: "#008000",
         cancelButtonColor: "#d33",
-        confirmButtonText: "Yes",
-        cancelButtonText: "No",
+        confirmButtonText: "{% translate 'Yes' %}",
+        cancelButtonText: "{% translate 'No' %}",
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
@@ -366,16 +365,16 @@ $(document).on('click', '.delete-btn', function () {
                 },
                 success: function (response) {
                     if (response.success) {
-                        Swal.fire("Deleted!", "The interview round has been deleted.", "success").then(() => {
+                        Swal.fire("{% translate 'Deleted!' %}", "{% translate 'The interview round has been deleted.' %}", "success").then(() => {
                             location.reload();
                         });
                     } else {
-                        Swal.fire("Error", "Delete failed. " + response.error || "", "error");
+                        Swal.fire("Error", "{% translate 'Delete failed.' %} " + (response.error || ""), "error");
                     }
                 },
                 error: function (xhr) {
                     console.error("AJAX Error:", xhr.status, xhr.responseText);
-                    Swal.fire("Error", "Something went wrong while deleting.", "error");
+                    Swal.fire("Error", "{% translate 'Something went wrong while deleting.' %}", "error");
                 }
             });
         }

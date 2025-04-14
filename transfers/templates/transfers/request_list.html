@@ -11,7 +11,7 @@
     }
 
     .oh-sticky-table {
-        width: 100%; /* Or auto, depending on your content */
+        width: 100%;
         border-collapse: collapse;
     }
 
@@ -22,13 +22,13 @@
         white-space: nowrap;
     }
 
-    .oh-sticky-table th:nth-child(1), /* Employee Column Header */
-    .oh-sticky-table td:nth-child(1) /* Employee Column Data */ {
+    .oh-sticky-table th:nth-child(1),
+    .oh-sticky-table td:nth-child(1) {
         position: sticky;
         left: 0;
-        background-color: #fff; /* Match table background */
-        z-index: 2; /* Ensure it's above other cells during scroll */
-        border-right: 1px solid #ddd; /* Optional: Add a visual separator */
+        background-color: #fff;
+        z-index: 2;
+        border-right: 1px solid #ddd;
     }
 
     .oh-filter-bar {
@@ -37,35 +37,25 @@
         border-bottom: 1px solid #eee;
         display: flex;
         align-items: center;
-        gap: 1rem; /* Space between filter elements and buttons */
+        gap: 1rem;
     }
 
     .oh-filter-bar__filters {
         display: flex;
         align-items: center;
-        gap: 1rem; /* Space between individual filters */
-        flex-grow: 1; /* Allow filters to take up available space */
+        gap: 1rem;
+        flex-grow: 1;
     }
 
     .oh-filter-bar__actions {
         display: flex;
         align-items: center;
-        gap: 0.5rem; /* Space between action buttons */
+        gap: 0.5rem;
     }
 
     .oh-label {
         margin-right: 0.5rem;
     }
-
-    /* Adjust styles for the action column if you want it sticky on the right */
-    /* .oh-sticky-table th:last-child, */
-    /* .oh-sticky-table td:last-child { */
-    /* position: sticky; */
-    /* right: 0; */
-    /* background-color: #fff; */
-    /* z-index: 2; */
-    /* border-left: 1px solid #ddd; */
-    /* } */
 </style>
 
 <div class="oh-wrapper">
@@ -79,17 +69,18 @@
                     <form method="get" class="oh-filter-bar__filters">
                         <div>
                             <label class="oh-label" for="employee_filter">{% trans "Employee" %}</label>
-                            <input type="text" class="oh-input oh-input--small" id="employee_filter" name="employee" placeholder="{% trans 'Filter by Employee' %}" value="{{ request.GET.employee }}">
+                            <input type="text" class="oh-input oh-input--small" id="employee_filter" name="employee"
+                                   placeholder="{% trans 'Filter by Employee' %}" value="{{ request.GET.employee }}">
                         </div>
                         <div>
                             <label class="oh-label" for="status_filter">{% trans "Status" %}</label>
                             <select class="oh-select oh-select--small" id="status_filter" name="status">
                                 <option value="">{% trans "All Statuses" %}</option>
-                                <option value="Requested" {% if request.GET.status == "Requested" %}selected{% endif %}>{% trans "Requested" %}</option>
-                                <option value="Processed" {% if request.GET.status == "Processed" %}selected{% endif %}>{% trans "Processed" %}</option>
-                                <option value="Approved" {% if request.GET.status == "Approved" %}selected{% endif %}>{% trans "Approved" %}</option>
-                                <option value="Rejected" {% if request.GET.status == "Rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>
-                                <option value="Cancelled" {% if request.GET.status == "Cancelled" %}selected{% endif %}>{% trans "Cancelled" %}</option>
+                                <option value="draft" {% if request.GET.status == "draft" %}selected{% endif %}>{% trans "Draft" %}</option>
+                                <option value="submitted" {% if request.GET.status == "submitted" %}selected{% endif %}>{% trans "Submitted" %}</option>
+                                <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>{% trans "Approved" %}</option>
+                                <option value="transferred" {% if request.GET.status == "transferred" %}selected{% endif %}>{% trans "Transferred" %}</option>
+                                <option value="rejected" {% if request.GET.status == "rejected" %}selected{% endif %}>{% trans "Rejected" %}</option>
                             </select>
                         </div>
                         <div>
@@ -97,7 +88,9 @@
                             <select class="oh-select oh-select--small" id="department_filter" name="department">
                                 <option value="">{% trans "All Departments" %}</option>
                                 {% for department in departments %}
-                                <option value="{{ department }}" {% if request.GET.department == department %}selected{% endif %}>{{ department }}</option>
+                                    <option value="{{ department }}" {% if request.GET.department == department %}selected{% endif %}>
+                                        {{ department }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -105,9 +98,11 @@
                         <a href="{% url 'transfer_list' %}" class="oh-btn oh-btn--secondary oh-btn--small">{% trans "Reset" %}</a>
                     </form>
                     <div class="oh-filter-bar__actions">
-                        <a href="{% url 'request_transfer' %}" class="oh-btn oh-btn--primary oh-btn--small">
-                            {% trans "Create Request" %}
-                        </a>
+                        {% if not is_employee or request.user.is_superuser %}
+                            <a href="{% url 'request_transfer' %}" class="oh-btn oh-btn--primary oh-btn--small">
+                                {% trans "Create Request" %}
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -118,7 +113,6 @@
                     {% endfor %}
                 </ul>
                 {% endif %}
-
 
                 {% if transfers %}
                 <div class="oh-table-responsive oh-sticky-table-wrapper">
@@ -143,50 +137,50 @@
                         <tr>
                             <td>{{ transfer.employee }}</td>
                             <td>{{ transfer.current_department }}</td>
-                            <td>{{ transfer.new_department}}</td>
-                            <td>{{ transfer.current_location}}</td>
-                            <td>{{ transfer.new_location}}</td>
-                            <td>{{ transfer.current_designation}}</td>
-                            <td>{{ transfer.new_designation}}</td>
+                            <td>{{ transfer.new_department }}</td>
+                            <td>{{ transfer.current_location }}</td>
+                            <td>{{ transfer.new_location }}</td>
+                            <td>{{ transfer.current_designation }}</td>
+                            <td>{{ transfer.new_designation }}</td>
                             <td>{{ transfer.date_transfer|date:"d M Y" }}</td>
                             <td>
-                                {% if transfer.status == "Requested" %}
-                                    <span class="oh-badge oh-badge--info">{% trans "Requested" %}</span>
-                                {% elif transfer.status == "Processed" %}
-                                    <span class="oh-badge oh-badge--secondary">{% trans "Processed" %}</span>
-                                {% elif transfer.status == "Approved" %}
+                                {% if transfer.status == "draft" %}
+                                    <span class="oh-badge oh-badge--dark">{% trans "Draft" %}</span>
+                                {% elif transfer.status == "submitted" %}
+                                    <span class="oh-badge oh-badge--info">{% trans "Submitted" %}</span>
+                                {% elif transfer.status == "approved" %}
                                     <span class="oh-badge oh-badge--success">{% trans "Approved" %}</span>
-                                {% elif transfer.status == "Rejected" %}
+                                {% elif transfer.status == "transferred" %}
+                                    <span class="oh-badge oh-badge--secondary">{% trans "Transferred" %}</span>
+                                {% elif transfer.status == "rejected" %}
                                     <span class="oh-badge oh-badge--danger">{% trans "Rejected" %}</span>
-                                {% elif transfer.status == "Cancelled" %}
-                                    <span class="oh-badge oh-badge--warning">{% trans "Cancelled" %}</span>
+                                {% else %}
+                                    <span class="oh-badge oh-badge--muted">{{ transfer.status }}</span>
                                 {% endif %}
                             </td>
                             <td>{{ transfer.requests_by.username }}</td>
                             <td>
+                                {% if transfer.allowed_actions %}
                                 <div class="oh-btn-group">
-                                    {% if transfer.status == "Requested" %}
-                                        <a href="{% url 'process_transfer' transfer.id %}" class="oh-btn oh-btn--info oh-btn--small">{% trans "Process" %}</a>
-                                        <a href="{% url 'cancelled_transfer' transfer.id %}" class="oh-btn oh-btn--warning oh-btn--small">{% trans "Cancel" %}</a>
-
-                                    {% elif transfer.status == "Processed" %}
+                                    {% if "submit_for_approval" in transfer.allowed_actions %}
+                                        <a href="{% url 'submitted_for_approval' transfer.id %}" class="oh-btn oh-btn--info oh-btn--small">{% trans "Submit" %}</a>
+                                    {% endif %}
+                                    {% if "approve" in transfer.allowed_actions %}
                                         <a href="{% url 'approved_transfer' transfer.id %}" class="oh-btn oh-btn--success oh-btn--small">{% trans "Approve" %}</a>
+                                    {% endif %}
+                                    {% if "reject" in transfer.allowed_actions %}
                                         <a href="{% url 'rejected_transfer' transfer.id %}" class="oh-btn oh-btn--danger oh-btn--small">{% trans "Reject" %}</a>
+                                    {% endif %}
+                                    {% if "cancel" in transfer.allowed_actions %}
                                         <a href="{% url 'cancelled_transfer' transfer.id %}" class="oh-btn oh-btn--warning oh-btn--small">{% trans "Cancel" %}</a>
-
-                                    {% elif transfer.status == "Approved" %}
-                                        <a href="{% url 'cancelled_transfer' transfer.id %}" class="oh-btn oh-btn--warning oh-btn--small">{% trans "Cancel" %}</a>
-
-                                    {% elif transfer.status == "Rejected" %}
-                                        <a href="{% url 'cancelled_transfer' transfer.id %}" class="oh-btn oh-btn--warning oh-btn--small">{% trans "Cancel" %}</a>
-
-                                    {% elif transfer.status == "Cancelled" %}
-                                        <span class="oh-text--muted">{% trans "Cancelled" %}</span>
-
-                                    {% else %}
-                                        <span class="oh-badge oh-badge--secondary">{% trans "Processed" %}</span>
+                                    {% endif %}
+                                    {% if "mark_transferred" in transfer.allowed_actions %}
+                                        <a href="{% url 'mark_transferred' transfer.id %}" class="oh-btn oh-btn--secondary oh-btn--small">{% trans "Mark Transferred" %}</a>
                                     {% endif %}
                                 </div>
+                                {% else %}
+                                <span class="oh-text--muted">{% trans "No Actions" %}</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

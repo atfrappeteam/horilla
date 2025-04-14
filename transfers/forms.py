@@ -1,6 +1,7 @@
 from django import forms
 from .models import EmployeeTransfer, Employee
 from base.models import Designation, Department  # Import Department model
+from django.utils.translation import gettext_lazy as trans
 
 class EmployeeTransferForm(forms.ModelForm):
     employee = forms.ModelChoiceField(
@@ -48,6 +49,3 @@ class EmployeeTransferForm(forms.ModelForm):
                 field.empty_label = trans("---Choose {label}---").format(label=label)
             elif isinstance(field.widget, forms.Textarea):
                 field.widget.attrs.update({"class": "oh-input w-100", "placeholder": label, "rows": 2, "cols": 40})
-
-from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy as trans
