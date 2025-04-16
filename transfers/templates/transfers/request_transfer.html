@@ -57,6 +57,12 @@
                         </div>
                     </div>
 
+                    <div class="col-12 col-sm-12 col-md-6 col-lg-6 mb-3">
+                            <label class="oh-label" for="{{ form.new_reporting_manager.id_for_label }}">{% trans "New Reporting Manager" %}</label>
+                            {{ form.new_reporting_manager }}
+                            {{ form.new_reporting_manager.errors }}
+                        </div>
+
                     <div class="row mb-3">
                         <div class="col-12 col-sm-12 col-md-12 col-lg-12">
                             <label class="oh-label" for="{{ form.reason.id_for_label }}">{% trans "Reason" %}</label>

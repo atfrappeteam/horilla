@@ -154,6 +154,10 @@
                                     <span class="oh-badge oh-badge--secondary">{% trans "Transferred" %}</span>
                                 {% elif transfer.status == "rejected" %}
                                     <span class="oh-badge oh-badge--danger">{% trans "Rejected" %}</span>
+                                {% elif transfer.status == "approved_by_reporting_manager" %}
+                                    <span class="oh-badge oh-badge">{% trans "Approved by Reporting Manager" %}</span>
+                                {% elif transfer.status == "approved_by_hr_manager" %}
+                                    <span class="oh-badge oh-badge">{% trans "Approved by HR Manager" %}</span>
                                 {% else %}
                                     <span class="oh-badge oh-badge--muted">{{ transfer.status }}</span>
                                 {% endif %}

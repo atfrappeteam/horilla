@@ -9,10 +9,13 @@ from base.models import Designation
 class EmployeeTransfer(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
-        ('pending_approval', 'Pending Approval'),
+        ('submitted', "Submitted"),
+        ('canceled', 'Canceled'),
+        ('approved_by_reporting_manager', 'Approved by Reporting Manager'),
+        ('approved_by_hr_manager', 'Approved by HR Manager'),
         ('approved', 'Approved'),
-        ('transferred', 'Transferred'),
         ('rejected', 'Rejected'),
+        ('transferred', 'Transferred'),
     ]
 
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
@@ -22,6 +25,7 @@ class EmployeeTransfer(models.Model):
     new_designation = models.ForeignKey(Designation, on_delete=models.SET_NULL, null=True, related_name="new_designation")
     current_location = models.CharField(max_length=255, blank=True, null =True)
     new_location = models.CharField(max_length=255, blank=True, null = True)
+    new_reporting_manager = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True,related_name="new_reporting_manager")
     date_transfer = models.DateField(auto_now_add=True)
     reason = models.TextField()
     requests_by = models.ForeignKey(User, on_delete=models.SET_NULL,null=True, blank=True, related_name="requests_by")
@@ -35,7 +39,9 @@ class EmployeeTransfer(models.Model):
             ("can_approve_transfer", "Can approve employee transfer"),
             ("can_reject_transfer", "Can reject employee transfer"),
             ("can_cancel_transfer", "Can cancel employee transfer"),
-            ("can_submit_for_approval", "Can submit transfer request for approval")
+            ("can_submit_for_approval", "Can submit transfer request for approval"),
+            ("can_approve_by_reporting_manager", "Can approve transfer as Reporting Manager"),
+            ("can_approve_by_hr_manager", "Can approve transfer as HR Manager"),
         ]
 
     def save(self, *args, **kwargs):
@@ -68,6 +74,8 @@ class EmployeeTransfer(models.Model):
             work_info.department_id = self.new_department
             work_info.designation_id = self.new_designation
             work_info.location = self.new_location
+            if self.new_reporting_manager:
+                work_info.reporting_manager = self.new_reporting_manager
             work_info.save()
 
     def reject_transfer(self, user):
@@ -82,14 +90,16 @@ class EmployeeTransfer(models.Model):
         self.cancelled_by = user
         self.save()
 
-    def mark_transferred(self):
-        """Mark the request as successfully transferred"""
-        self.status = "transferred"
+    def approved_by_rm(self, user):
+        self.status = "Approved by Reporting Manager"
         self.save()
 
-    def mark_pending_approval(self):
-        """Mark the request as pending transfer"""
-        self.status = "pending_approval"
+    def approved_by_hr(self, user):
+        self.status = "Approved by HR Manager"
+        self.save()
+
+    def mark_transferred(self,user):
+        self.status = "transferred"
         self.save()
 
     def __str__(self):
