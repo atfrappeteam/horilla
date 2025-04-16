@@ -825,7 +825,8 @@ class DailyWorkSummaryForm(forms.ModelForm):
         fields = ['name', 'users', 'send_email_at', 'holiday_list', 'subject', 'message']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter summary name'}),
-            'users': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            # 'users': forms.SelectMultiple(attrs={'class': 'form-select select2-multiple','data-placeholder': 'Select employee emails',}),
+
             'send_email_at': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control timepicker'}),
             'holiday_list': forms.HiddenInput(),  # Hidden field controlled by Flatpickr
             'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter email subject'}),
@@ -841,15 +842,23 @@ class DailyWorkSummaryForm(forms.ModelForm):
 
         return holiday_list  # Store as a string
 
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     employees = Employee.objects.all()
-    #     choices = [(emp.id, emp.email) for emp in employees]
-    #     self.fields['users'].choices = choices  
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['users'].queryset = User.objects.all()
-        self.fields['users'].label_from_instance = lambda obj: obj.email
+
+        # Filter Users that have an associated Employee
+        employee_users = User.objects.filter(employee_get__isnull=False)
+
+        self.fields['users'] = forms.ModelMultipleChoiceField(
+            queryset=employee_users,
+            widget=forms.SelectMultiple(attrs={"class": "oh-select oh-select2 w-100","style": "height: 45px;",}),
+            label='Employees',
+        )
+
+        # Show "FirstName LastName (email)" in the dropdown
+        self.fields['users'].label_from_instance = lambda obj: (
+            f"{obj.employee_get.employee_first_name} {obj.employee_get.employee_last_name or ''} ({obj.email})"
+        )
+        
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -858,3 +867,4 @@ class DailyWorkSummaryForm(forms.ModelForm):
             if 'users' in self.cleaned_data:
                 instance.users.set(self.cleaned_data['users'])
         return instance
+

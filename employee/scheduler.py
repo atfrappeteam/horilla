@@ -9,7 +9,7 @@ from django_apscheduler.models import DjangoJob
 from django.core.mail import send_mail
 from django.conf import settings
 from employee.models import DailyWorkSummary
-import holidays
+# import holidays
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
 jobstores = {
@@ -23,7 +23,7 @@ scheduler = BackgroundScheduler(jobstores=jobstores)
 def send_daily_work_summary(summary_id):
     """Fetch the specific DailyWorkSummary and send emails to assigned users."""
     today = datetime.date.today()
-    holiday_list = holidays.India()
+    # holiday_list = holidays.India()
 
     # if today in holiday_list:
     #     print(f"🚫 Today ({today}) is a holiday. No emails sent.")
@@ -38,7 +38,7 @@ def send_daily_work_summary(summary_id):
             custom_holidays = set()
 
         # Check if today is a holiday
-        if today in holiday_list or today in custom_holidays:
+        if today in custom_holidays:
             print(f"🚫 Today ({today}) is a holiday. No emails sent.")
             return
         user_emails = [user.email for user in summary.users.all() if user.email]
@@ -69,7 +69,7 @@ def schedule_daily_work_summaries():
     try:
         DjangoJob.objects.all().delete()  # Clear old job data
         scheduler.remove_all_jobs()
-        print("🗑️ Cleared existing jobs from APScheduler.")
+        # print("🗑️ Cleared existing jobs from APScheduler.")
 
         timezone = pytz.timezone("Asia/Kolkata")
         summaries = DailyWorkSummary.objects.all()
@@ -88,7 +88,7 @@ def schedule_daily_work_summaries():
                     replace_existing=True,
                     args=[summary.id]
                 )
-                print(f"📅 Scheduled {summary.name} at {send_time.hour}:{send_time.minute}")
+                # print(f"📅 Scheduled {summary.name} at {send_time.hour}:{send_time.minute}")
 
         if not scheduler.running:
             scheduler.start()
@@ -140,13 +140,13 @@ if not any(cmd in sys.argv for cmd in ["makemigrations", "migrate", "compilemess
 
     try:
         DjangoJob.objects.all().delete()  # Clear old scheduler jobs
-        print("✅ Cleared old scheduler jobs.")
+        # print("✅ Cleared old scheduler jobs.")
 
         if not scheduler.running:
             scheduler.add_job(update_experience, "interval", hours=4, replace_existing=True)
             scheduler.add_job(block_unblock_disciplinary, "interval", minutes=1, replace_existing=True)
             scheduler.start()
-            print("🚀 APScheduler started successfully.")
+            # print("🚀 APScheduler started successfully.")
         else:
             print("⚠️ Scheduler is already running. Skipping restart.")
     except Exception as e:

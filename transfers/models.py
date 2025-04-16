@@ -67,7 +67,7 @@ class EmployeeTransfer(models.Model):
 
     def reject_transfer(self, user):
         """Reject the transfer request"""
-        self.status = "Reject"
+        self.status = "Rejected"
         self.rejected_by = user
         self.save()
 
