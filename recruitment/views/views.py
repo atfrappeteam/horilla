@@ -3624,27 +3624,33 @@ def delete_interview_round(request, pk):
             return JsonResponse({"success": False, "error": "Not found"}, status=404)
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
 
-
+@login_required
 def create_feedback(request):
-    skills = ["technical_skill", "communication", "problem", "attitude"]  # or dynamically fetch from SkillZone model
+    skills = ["technical_skill", "communication", "problem", "attitude"]
 
     if request.method == 'POST':
         form = InterviewFeedbackForm(request.POST)
+
         if form.is_valid():
+            print("Form is valid and no duplicates found")
             interview_feedback = form.save()
             messages.success(request, f"Interview feedback '{interview_feedback.interview}' created successfully.")
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({"success": True})
+
             return redirect("list_interview_feedback")
-        else:
-            if request.headers.get("x-requested-with") == 'XMLHttpRequest':
-                html = render_to_string("feedback/create_feedback.html", {"form": form, "skills": skills}, request=request)
-                return JsonResponse({"success": False, "html": html})
-            messages.error(request, "Error: Please correct the form errors and try again.")
+
+        # If form is invalid
+        if request.headers.get("x-requested-with") == 'XMLHttpRequest':
+            html = render_to_string("feedback/create_feedback.html", {"form": form, "skills": skills}, request=request)
+            return JsonResponse({"success": False, "html": html})
+
+        messages.error(request, "Error: Please correct the form errors and try again.")
+
     else:
         form = InterviewFeedbackForm()
-        skills = ["technical_skill", "communication", "problem", "attitude"]
+
     return render(request, "feedback/create_feedback.html", {"form": form, "skills": skills})
 
 def list_interview_feedback(request):
@@ -3662,3 +3668,7 @@ def get_interview_details(request, interview_id):
         })
     except InterviewSchedule.DoesNotExist:
         return JsonResponse({'error': 'Interview not found'}, status=404)
+
+def feedback_detail_view(request, pk):
+    feedback = get_object_or_404(InterviewFeedback, pk=pk)
+    return render(request, "feedback/feedback_view.html", {"feedback": feedback})

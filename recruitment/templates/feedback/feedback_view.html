@@ -1,0 +1,100 @@
+<style>
+    .rating-stars {
+        color: #f0ad4e;
+        font-size: 1.2rem;
+    }
+    .rating-label {
+        font-weight: 600;
+    }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-6"><span class="rating-label">Interview:</span> {{ feedback.interview }}</div>
+        <div class="col-md-6"><span class="rating-label">Round:</span> {{ feedback.interview_round }}</div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-6"><span class="rating-label">Interviewer:</span> {{ feedback.interviewer }}</div>
+        <div class="col-md-6"><span class="rating-label">Result:</span> {{ feedback.result|title }}</div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <span class="rating-label">Technical Skill:</span>
+            <div class="rating-stars">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= feedback.technical_skill %}
+                        <i class="fas fa-star"></i>
+                    {% else %}
+                        <i class="far fa-star"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <span class="rating-label">Communication:</span>
+            <div class="rating-stars">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= feedback.communication %}
+                        <i class="fas fa-star"></i>
+                    {% else %}
+                        <i class="far fa-star"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <span class="rating-label">Problem Solving:</span>
+            <div class="rating-stars">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= feedback.problem %}
+                        <i class="fas fa-star"></i>
+                    {% else %}
+                        <i class="far fa-star"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <span class="rating-label">Attitude:</span>
+            <div class="rating-stars">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= feedback.attitude %}
+                        <i class="fas fa-star"></i>
+                    {% else %}
+                        <i class="far fa-star"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <span class="rating-label">Average Score:</span>
+            <div class="rating-stars">
+                {% with avg=feedback.avg_score|floatformat:0 %}
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= avg %}
+                            <i class="fas fa-star"></i>
+                        {% else %}
+                            <i class="far fa-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <span class="rating-label">Remark:</span><br>
+            <p class="mt-2">{{ feedback.remark }}</p>
+        </div>
+    </div>
+</div>
