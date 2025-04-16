@@ -3772,7 +3772,9 @@ def daily_work_summary_edit(request, summary_id):
 
     if request.method == "POST":
         if form.is_valid():
-            form.save()
+            summary = form.save(commit=False)
+            summary.save()
+            form.save_m2m() 
 
             if request.headers.get('HX-Request'):
                 response = HttpResponse()
@@ -3801,13 +3803,15 @@ def daily_work_summary_delete(request, summary_id):
         return HttpResponse("")  # HTMX will remove the row from the table dynamically
     return redirect("employee/daily_work_summary/daily_work_summary_list")  # Redirect if not using HTMX
 
-
+@permission_required('employee.add_dailyworksummary')
 def daily_work_summary_create(request):
     form = DailyWorkSummaryForm(request.POST or None)
 
     if request.method == "POST":
         if form.is_valid():
-            form.save()
+            summary = form.save(commit=False)
+            summary.save()
+            form.save_m2m() 
             schedule_daily_work_summaries()
 
             if request.headers.get('HX-Request'):

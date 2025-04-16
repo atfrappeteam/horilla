@@ -46,6 +46,36 @@
         overflow-y: auto;
         max-height: 200px;
     }
+    .truncate-text {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2; /* Standard property */
+    -webkit-box-orient: vertical;
+    line-height: 1.5em;
+    max-height: 3em;
+    transition: max-height 0.3s ease;
+    /* cursor: pointer; */
+}
+
+.truncate-text.expanded {
+    -webkit-line-clamp: unset;
+    line-clamp: unset; /* Standard property */
+    max-height: none;
+}
+
+    .truncate-text:hover {
+        background-color: #f8f9fa;
+    }
+    tr.expanded-row .truncate-text {
+        -webkit-line-clamp: unset;
+        line-clamp: unset;
+        max-height: none;
+    }
+    .expandable-row {
+        cursor: pointer;
+    }
+
 </style>
 
 <section class="oh-wrapper custom-padding">
@@ -70,6 +100,7 @@
                 </button>
         
                 <!-- Create Button -->
+                {% if perms.employee.add_dailyworksummary %}
                 <button class="oh-btn oh-btn--secondary oh-btn--shadow"
                         hx-get="{% url 'daily_work_summary_create' %}"
                         hx-target="#dailyWorkSummaryCreateModalTarget"
@@ -78,6 +109,7 @@
                     <ion-icon name="add-outline" class="me-1"></ion-icon>
                     {% trans "Create Daily Work Summary" %}
                 </button>
+                {% endif %}
             </div>
         </div>
         
@@ -89,14 +121,14 @@
             <thead>
                     <tr>
                         <th style="width: 10%;">{% trans "Name" %}</th>
-                        <th style="width: 15%;">{% trans "Users" %}</th> <!-- Reduced -->
+                        <th style="width: 10%;">{% trans "Users" %}</th> <!-- Reduced -->
                         <th style="width: 15%;">{% trans "Send Email At" %}</th> <!-- Increased -->
                         <th style="width: 10%;">{% trans "Holiday List" %}</th>
                         <th style="width: 15%;">{% trans "Subject" %}</th>
-                        <th style="width: 15%;">{% trans "Message" %}</th>
+                        <th style="width: 20%;">{% trans "Message" %}</th>
                                         
                     
-                    <th class="text-right" style="width:15%">
+                    <th class="text-right" style="width:10%">
                         Created At
                         <a href="?ordering=created_at{% for key, value in request.GET.items %}{% if key != 'ordering' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Sort Ascending" style="text-decoration: none;">
                             <span style="display: inline-block; transform: rotate(90deg); font-size: 16px; color: black;">→</span>
@@ -114,18 +146,40 @@
             <tbody>
                 {% for summary in summaries %}
                 <tr>
-                    <td>{{ summary.name }}</td>
+                    <!-- Modified columns with clickable text -->
                     <td>
-                        {% for user in summary.users.all %}
-                            {{ user.email }}{% if not forloop.last %}, {% endif %}
-                        {% endfor %}
+                        <div class="truncate-text">{{ summary.name }}</div>
                     </td>
-                    <td>{{ summary.send_email_at }}</td>
-                    <td>{{ summary.holiday_list|default:"-" }}</td>
-                    <td>{{ summary.subject }}</td>
-                    <td>{{ summary.message }}</td>
-                    <td>{{ summary.created_at }}</td>
+
                     <td>
+                        <div class="truncate-text">
+                            {% for user in summary.users.all %}
+                                {{ user.email }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="truncate-text">{{ summary.send_email_at }}</div>
+                    </td>
+
+                    <td>
+                        <div class="truncate-text">{{ summary.holiday_list|default:"-" }}</div>
+                    </td>
+
+                    <td>
+                        <div class="truncate-text">{{ summary.subject }}</div>
+                    </td>
+
+                    <td>
+                        <div class="truncate-text">{{ summary.message }}</div>
+                    </td>
+
+                    <td>
+                        <div class="truncate-text">{{ summary.created_at }}</div>
+                    </td>
+                    <td>
+                        {% if perms.employee.change_dailyworksummary %}
                         <button class="btn btn-link p-0"
                                 hx-get="{% url 'daily_work_summary_edit' summary.id %}"
                                 hx-target="#dailyWorkSummaryCreateModalTarget"
@@ -133,6 +187,8 @@
                                 data-bs-target="#dailyWorkSummaryCreateModal">
                             <ion-icon name="create-outline"></ion-icon>
                         </button>
+                        {% endif %}
+                        {% if perms.employee.delete_dailyworksummary %}
                         <button hx-delete="{% url 'daily_work_summary_delete' summary.id %}"
                                 hx-confirm="Are you sure?"
                                 hx-trigger="click"
@@ -141,6 +197,7 @@
                                 class="btn btn-link p-0 text-danger">
                             <ion-icon name="trash-outline"></ion-icon>
                         </button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -264,6 +321,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        // Filter selector functionality
         const filterSelector = document.getElementById("filterSelector");
         const filters = {
             name: document.getElementById("filterNameContainer"),
@@ -283,7 +341,27 @@
         if (filterSelector.value) {
             filterSelector.dispatchEvent(new Event("change"));
         }
+
+        // Row expansion functionality
+        document.querySelectorAll('tbody tr').forEach(row => {
+            // Check if any cell needs expansion (exclude last action column)
+            const hasOverflow = Array.from(row.cells)
+                .slice(0, -1) // Exclude last cell (actions column)
+                .some(cell => {
+                    const content = cell.querySelector('.truncate-text');
+                    return content && content.scrollHeight > content.clientHeight;
+                });
+
+            if (hasOverflow) {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', function(e) {
+                    // Prevent action column clicks from triggering
+                    if (!e.target.closest('td:last-child')) {
+                        this.classList.toggle('expanded-row');
+                    }
+                });
+            }
+        });
     });
-    
 </script>
 {% endblock %}
