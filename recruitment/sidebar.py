@@ -49,6 +49,11 @@ SUBMENUS = [
         "accessibility": "recruitment.sidebar.interview_accessibility",
     },
     {
+        "menu": _("Interview Feedback"),
+        "redirect": reverse("list_interview_feedback"),
+        "accessibility": "recruitment.sidebar.skill_zone_accessibility",
+    },
+    {
         "menu": _("Recruitment"),
         "redirect": reverse("recruitment-view"),
         "accessibility": "recruitment.sidebar.recruitment_accessibility",

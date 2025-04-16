@@ -1322,44 +1322,45 @@ class InterviewRoundForm(forms.ModelForm):
         }
 
 
-from django import forms
-from .models import InterviewFeedback, InterviewRound, Employee
-
 class InterviewFeedbackForm(forms.ModelForm):
     class Meta:
         model = InterviewFeedback
         fields = "__all__"
         exclude = ['average_score']
-
         widgets = {
-            'interview': forms.Select(attrs={
-                'class': 'form-control', 'id': 'id_interview'
-            }),
-            'interview_round': forms.Select(attrs={
-                'class': 'form-control', 'id': 'id_interview_round',
-                'readonly': True, 'disabled': True,
-                'style': 'display:none;'
-            }),
-            'interviewer': forms.Select(attrs={
-                'class': 'form-control', 'id': 'id_interviewer',
-                'readonly': True, 'disabled': True,
-                'style': 'display:none;'
-            }),
-            'remark': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3
-            }),
-            'result': forms.Select(attrs={
-                'class': 'form-control'
-            }),
+            'interview': forms.Select(attrs={'class': 'form-control', 'id': 'id_interview'}),
+            'interview_round': forms.Select(attrs={'class': 'form-control', 'id': 'id_interview_round', 'readonly': True, 'disabled': True, 'style': 'display:none;'}),
+            'interviewer': forms.Select(attrs={'class': 'form-control', 'id': 'id_interviewer', 'readonly': True, 'disabled': True, 'style': 'display:none;'}),
+            'remark': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'result': forms.Select(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # Make sure interview_round and interviewer have data to match fetched IDs
         self.fields['interview_round'].queryset = InterviewRound.objects.all()
         self.fields['interviewer'].queryset = Employee.objects.all()
-
-        # Hide number inputs for rating fields (JS will update their values)
         for field in ['technical_skill', 'communication', 'problem', 'attitude']:
             self.fields[field].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        interview = cleaned_data.get('interview')
+        interview_round = cleaned_data.get('interview_round')
+        interviewer = cleaned_data.get('interviewer')
+        print("Checking duplicate for:", interview, interview_round, interviewer)
+        a = 1
+        print("a = ", a)
+
+        if interview and interview_round and interviewer:
+            exists = InterviewFeedback.objects.filter(
+                interview=interview,
+                interview_round=interview_round,
+                interviewer=interviewer
+            ).exists()
+            print("Already exists?", exists)
+            print("a = ", a+1)
+            if exists:
+                raise forms.ValidationError(
+                    "Feedback for this interview, round, and interviewer already exists."
+                )
+        return cleaned_data

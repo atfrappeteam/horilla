@@ -38,7 +38,7 @@ def menu_accessibility(request, _menu: str = "", user_perms: PermWrapper = [], *
 
 def menu_request_transfer(request, submenu, user_perms, *args, **kwargs):
     user = request.user
-    return user.has_perm("transfers.transfer_list")
+    return user.has_perm("transfers.request_transfer")
 
 
 def menu_transfer_list(request, submenu, user_perms, *args, **kwargs):

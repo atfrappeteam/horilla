@@ -18,6 +18,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Avg
 from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
@@ -1054,16 +1055,36 @@ class InterviewFeedback(HorillaModel):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('interview_round', 'interviewer')
+        unique_together = ('interview', 'interview_round', 'interviewer')
 
     def save(self, *args, **kwargs):
+
+        # Calculate average rating
         self.average_score = round((
             self.technical_skill +
             self.communication +
             self.problem +
             self.attitude
         ) / 4, 2)
+
         super().save(*args, **kwargs)
+
+        # 🧠 Fix the candidate extraction logic
+        candidate = self.interview.candidate_id  # ✅ adjust if your field is named differently
+        interviewer = self.interviewer
+
+        # Calculate all average feedbacks from this interviewer for the same candidate
+        avg_rating = InterviewFeedback.objects.filter(
+            interviewer=interviewer,
+            interview__candidate_id=candidate
+        ).aggregate(avg=Avg('average_score'))['avg']
+
+        if avg_rating is not None:
+            CandidateRating.objects.update_or_create(
+                employee_id=interviewer,
+                candidate_id=candidate,
+                defaults={'rating': round(avg_rating)}
+            )
 
     def __str__(self):
         return f"Feedback by {self.interviewer} for {self.interview} (Round: {self.interview_round})"

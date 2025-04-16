@@ -1,8 +1,6 @@
-{% extends "index.html" %}
 {% load static %}
 {% load basefilters %}
 
-{% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
 
 <style>
@@ -15,29 +13,42 @@
     .star-rating .bi-star-fill {
         color: gold;
     }
+    .form-error {
+        color: red;
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
 </style>
 
 <div class="container mt-4">
-    <form method="post" action="">
+    <form method="post" action="{% url 'create-interview-feedback' %}" id="feedbackForm">
         {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
 
         <div class="form-group mb-3">
             {{ form.interview.label_tag }}
             {{ form.interview }}
+            {% if form.interview.errors %}
+                <div class="form-error">{{ form.interview.errors.0 }}</div>
+            {% endif %}
         </div>
 
         <div class="form-group mb-3" id="round-group" style="display:none;">
-    <label>Interview Round:</label>
-    <p id="round-text" class="form-control-plaintext"></p>
-    {{ form.interview_round }}
-</div>
+            <label>Interview Round:</label>
+            <p id="round-text" class="form-control-plaintext"></p>
+            {{ form.interview_round }}
+        </div>
 
-<div class="form-group mb-3" id="interviewer-group" style="display:none;">
-    <label>Interviewer:</label>
-    <p id="interviewer-text" class="form-control-plaintext"></p>
-    {{ form.interviewer }}
-</div>
-
+        <div class="form-group mb-3" id="interviewer-group" style="display:none;">
+            <label>Interviewer:</label>
+            <p id="interviewer-text" class="form-control-plaintext"></p>
+            {{ form.interviewer }}
+        </div>
 
         {% for field in form %}
             {% if field.name in skills %}
@@ -56,11 +67,17 @@
         <div class="form-group mb-3">
             {{ form.remark.label_tag }}
             {{ form.remark }}
+            {% if form.remark.errors %}
+                <div class="form-error">{{ form.remark.errors.0 }}</div>
+            {% endif %}
         </div>
 
         <div class="form-group mb-3">
             {{ form.result.label_tag }}
             {{ form.result }}
+            {% if form.result.errors %}
+                <div class="form-error">{{ form.result.errors.0 }}</div>
+            {% endif %}
         </div>
 
         <button type="submit" class="btn btn-primary">Submit Feedback</button>
@@ -68,7 +85,7 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    function initializeFeedbackForm() {
         const roundGroup = document.getElementById("round-group");
         const interviewerGroup = document.getElementById("interviewer-group");
 
@@ -76,38 +93,38 @@
         const roundField = document.getElementById("id_interview_round");
         const interviewerField = document.getElementById("id_interviewer");
 
-        interviewSelect.addEventListener("change", function () {
-    const interviewId = this.value;
-    if (interviewId) {
-        fetch(`/recruitment/get-interview-details/${interviewId}/`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.round_id) {
-                    roundField.disabled = false;  // Enable first
-                    roundField.value = data.round_id;
+        if (interviewSelect) {
+            interviewSelect.addEventListener("change", function () {
+                const interviewId = this.value;
+                if (interviewId) {
+                    fetch(`/recruitment/get-interview-details/${interviewId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.round_id) {
+                                roundField.disabled = false;
+                                roundField.value = data.round_id;
 
-                    // Show selected text
-                    const roundText = roundField.options[roundField.selectedIndex].text;
-                    document.getElementById("round-text").textContent = roundText;
+                                const roundText = roundField.options[roundField.selectedIndex].text;
+                                document.getElementById("round-text").textContent = roundText;
 
-                    roundGroup.style.display = "block";
-                }
+                                roundGroup.style.display = "block";
+                            }
 
-                if (data.interviewer_ids.length > 0) {
-                    interviewerField.disabled = false;
-                    interviewerField.value = data.interviewer_ids[0];
+                            if (data.interviewer_ids.length > 0) {
+                                interviewerField.disabled = false;
+                                interviewerField.value = data.interviewer_ids[0];
 
-                    const interviewerText = interviewerField.options[interviewerField.selectedIndex].text;
-                    document.getElementById("interviewer-text").textContent = interviewerText;
+                                const interviewerText = interviewerField.options[interviewerField.selectedIndex].text;
+                                document.getElementById("interviewer-text").textContent = interviewerText;
 
-                    interviewerGroup.style.display = "block";
+                                interviewerGroup.style.display = "block";
+                            }
+                        });
                 }
             });
-    }
-});
+        }
 
-
-        // ⭐ Star click logic
+        // Star rating
         document.querySelectorAll(".star-rating").forEach(function (ratingDiv) {
             const fieldName = ratingDiv.dataset.field;
             const stars = ratingDiv.querySelectorAll("i");
@@ -118,13 +135,11 @@
                     const ratingValue = parseInt(this.dataset.value);
                     hiddenInput.value = ratingValue;
 
-                    // Reset all stars
                     stars.forEach(s => {
                         s.classList.remove("bi-star-fill");
                         s.classList.add("bi-star");
                     });
 
-                    // Highlight selected stars
                     for (let i = 0; i < ratingValue; i++) {
                         stars[i].classList.remove("bi-star");
                         stars[i].classList.add("bi-star-fill");
@@ -132,6 +147,6 @@
                 });
             });
         });
-    });
+
+
 </script>
-{% endblock %}

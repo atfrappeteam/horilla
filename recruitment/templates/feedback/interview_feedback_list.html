@@ -1,50 +1,363 @@
 {% extends "index.html" %}
 {% load static %}
+{% load i18n %}
+
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+<style>
+    .oh-sticky-table-wrapper {
+        display: block;
+        overflow-x: auto;
+    }
 
-<div class="container mt-4">
-    <h3 class="mb-4">Interview Feedback List</h3>
+    .oh-sticky-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>#</th>
-                <th>Interview</th>
-                <th>Round</th>
-                <th>Interviewer</th>
-                <th>Technical</th>
-                <th>Communication</th>
-                <th>Problem</th>
-                <th>Attitude</th>
-                <th>Avg. Score</th>
-                <th>Result</th>
-                <th>Remark</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for feedback in interview_feedback %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ feedback.interview }}</td>
-                <td>{{ feedback.interview_round }}</td>
-                <td>{{ feedback.interviewer }}</td>
-                <td>{{ feedback.technical_skill }}</td>
-                <td>{{ feedback.communication }}</td>
-                <td>{{ feedback.problem }}</td>
-                <td>{{ feedback.attitude }}</td>
-                <td>{{ feedback.average_score }}</td>
-                <td>{{ feedback.result|title }}</td>
-                <td>{{ feedback.remark }}</td>
-                <td>{{ feedback.created_at|date:"Y-m-d H:i" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="12" class="text-center">No feedback submitted yet.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    .oh-sticky-table th,
+    .oh-sticky-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #ddd;
+        white-space: nowrap;
+    }
+
+    .oh-sticky-table th:nth-child(1),
+    .oh-sticky-table td:nth-child(1) {
+        position: sticky;
+        left: 0;
+        background-color: #fff;
+        z-index: 2;
+        border-right: 1px solid #ddd;
+    }
+
+    .oh-filter-bar {
+        margin-bottom: 1.5rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .oh-filter-bar__filters {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-grow: 1;
+    }
+
+    .oh-filter-bar__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .oh-label {
+        margin-right: 0.5rem;
+    }
+
+    .star-rating-view i,
+    .average-star-rating i {
+        color: gold;
+        font-size: 1.2rem;
+        margin-right: 2px;
+    }
+</style>
+
+<div class="oh-wrapper">
+    <div class="oh-main__content">
+        <div class="oh-card">
+            <div class="oh-card__header d-flex justify-content-between align-items-center">
+                <h3 class="oh-card__title">{% trans "Interview Feedback List" %}</h3>
+            </div>
+            <div class="oh-card__body">
+                <!-- Filter bar -->
+                <div class="oh-filter-bar mb-3">
+                    <form method="get" class="oh-filter-bar__filters">
+                        <div>
+                            <label class="oh-label" for="interview_filter">{% trans "Interview" %}</label>
+                            <input type="text" class="oh-input oh-input--small" id="interview_filter" name="interview"
+                                placeholder="{% trans 'Filter by Interview' %}" value="{{ request.GET.interview }}">
+                        </div>
+                        <button type="submit" class="oh-btn oh-btn--primary oh-btn--small">{% trans "Filter" %}</button>
+                        <a href="{% url 'list_interview_feedback' %}" class="oh-btn oh-btn--secondary oh-btn--small">{% trans "Reset" %}</a>
+                    </form>
+                    <div class="oh-filter-bar__actions">
+                        <button type="button" class="oh-btn oh-btn--primary oh-btn--small open-feedback-modal" id="openFeedbackBtn" data-interview-id="">
+                            {% trans "Create Feedback" %}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                {% if interview_feedback %}
+                <div class="oh-table-responsive oh-sticky-table-wrapper">
+                    <table class="oh-table oh-sticky-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>{% trans "Interview" %}</th>
+                                <th>{% trans "Round" %}</th>
+                                <th>{% trans "Interviewer" %}</th>
+                                <th>{% trans "Technical" %}</th>
+                                <th>{% trans "Communication" %}</th>
+                                <th>{% trans "Problem" %}</th>
+                                <th>{% trans "Attitude" %}</th>
+                                <th>{% trans "Avg. Score" %}</th>
+                                <th>{% trans "Result" %}</th>
+                                <th>{% trans "Remark" %}</th>
+                                <th>{% trans "Date" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for feedback in interview_feedback %}
+                            <tr class="clickable-row" data-id="{{ feedback.id }}">
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ feedback.interview }}</td>
+                                <td>{{ feedback.interview_round }}</td>
+                                <td>{{ feedback.interviewer }}</td>
+                                <td class="star-rating-view" data-rating="{{ feedback.technical_skill }}"></td>
+                                <td class="star-rating-view" data-rating="{{ feedback.communication }}"></td>
+                                <td class="star-rating-view" data-rating="{{ feedback.problem }}"></td>
+                                <td class="star-rating-view" data-rating="{{ feedback.attitude }}"></td>
+                                <td class="average-star-rating" data-rating="{{ feedback.average_score }}"></td>
+                                <td>
+                                    {% if feedback.result == "selected" %}
+                                    <span class="oh-badge oh-badge--success">{% trans "Selected" %}</span>
+                                    {% elif feedback.result == "rejected" %}
+                                    <span class="oh-badge oh-badge--danger">{% trans "Rejected" %}</span>
+                                    {% else %}
+                                    <span class="oh-badge oh-badge--secondary">{{ feedback.result|title }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ feedback.remark }}</td>
+                                <td>{{ feedback.created_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="oh-text--muted">{% trans "No feedback submitted yet." %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="interviewFeedbackModal" tabindex="-1" aria-labelledby="interviewFeedbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content p-3">
+            <div class="modal-header">
+                <h5 class="modal-title" id="interviewFeedbackModalLabel">{% trans "Submit Interview Feedback" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+            </div>
+            <div class="modal-body" id="feedbackModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border" role="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Detail Modal -->
+<div class="modal fade" id="feedbackDetailModal" tabindex="-1" aria-labelledby="feedbackDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content p-3">
+      <div class="modal-header">
+        <h5 class="modal-title" id="feedbackDetailModalLabel">{% trans "Feedback Details" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+      </div>
+      <div class="modal-body" id="feedbackDetailBody">
+        <div class="text-center py-5">
+          <div class="spinner-border" role="status"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- JS Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const modalElement = document.getElementById("interviewFeedbackModal");
+        const modalBody = document.getElementById("feedbackModalBody");
+        const openBtn = document.getElementById("openFeedbackBtn");
+
+        if (!modalElement || !modalBody || !openBtn) {
+            console.error("Required elements not found.");
+            return;
+        }
+
+        const modal = new bootstrap.Modal(modalElement);
+
+        openBtn.addEventListener("click", function () {
+            modalBody.innerHTML = `<div class="text-center py-5"><div class="spinner-border" role="status"></div></div>`;
+            modal.show();
+
+            fetch("{% url 'create-interview-feedback' %}", {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            })
+            .then(response => response.text())
+            .then(html => {
+                modalBody.innerHTML = html;
+                initializeFeedbackForm(); // Initialize form logic
+            })
+            .catch(() => {
+                modalBody.innerHTML = `<p class="text-danger">Failed to load the form.</p>`;
+            });
+        });
+    });
+
+    function initializeFeedbackForm() {
+        const roundGroup = document.getElementById("round-group");
+        const interviewerGroup = document.getElementById("interviewer-group");
+
+        const interviewSelect = document.getElementById("id_interview");
+        const roundField = document.getElementById("id_interview_round");
+        const interviewerField = document.getElementById("id_interviewer");
+
+        if (interviewSelect) {
+            interviewSelect.addEventListener("change", function () {
+                const interviewId = this.value;
+                if (interviewId) {
+                    fetch(`/recruitment/get-interview-details/${interviewId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.round_id) {
+                                roundField.disabled = false;
+                                roundField.value = data.round_id;
+                                const roundText = roundField.options[roundField.selectedIndex].text;
+                                document.getElementById("round-text").textContent = roundText;
+                                roundGroup.style.display = "block";
+                            }
+
+                            if (data.interviewer_ids.length > 0) {
+                                interviewerField.disabled = false;
+                                interviewerField.value = data.interviewer_ids[0];
+                                const interviewerText = interviewerField.options[interviewerField.selectedIndex].text;
+                                document.getElementById("interviewer-text").textContent = interviewerText;
+                                interviewerGroup.style.display = "block";
+                            }
+                        });
+                }
+            });
+        }
+
+        // Star rating logic
+        document.querySelectorAll(".star-rating").forEach(function (ratingDiv) {
+            const fieldName = ratingDiv.dataset.field;
+            const stars = ratingDiv.querySelectorAll("i");
+            const hiddenInput = document.getElementById(`id_${fieldName}`);
+
+            stars.forEach(function (star) {
+                star.addEventListener("click", function () {
+                    const ratingValue = parseInt(this.dataset.value);
+                    hiddenInput.value = ratingValue;
+
+                    stars.forEach(s => {
+                        s.classList.remove("bi-star-fill");
+                        s.classList.add("bi-star");
+                    });
+
+                    for (let i = 0; i < ratingValue; i++) {
+                        stars[i].classList.remove("bi-star");
+                        stars[i].classList.add("bi-star-fill");
+                    }
+                });
+            });
+        });
+
+        // Handle form submission
+        const form = document.querySelector("#feedbackModalBody form");
+        if (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                const formData = new FormData(form);
+
+                fetch("{% url 'create-interview-feedback' %}", {
+                    method: "POST",
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById("interviewFeedbackModal")).hide();
+                        location.reload();
+                    } else {
+                        document.getElementById("feedbackModalBody").innerHTML = data.html;
+                        initializeFeedbackForm(); // Re-bind
+                    }
+                })
+                .catch(() => {
+                    document.getElementById("feedbackModalBody").innerHTML = `<p class="text-danger">Submission failed.</p>`;
+                });
+            });
+        }
+    }
+
+    function renderHalfStars(rating) {
+        let starsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            if (rating >= i) {
+                starsHtml += '<i class="bi bi-star-fill"></i>';
+            } else if (rating >= i - 0.5) {
+                starsHtml += '<i class="bi bi-star-half"></i>';
+            } else {
+                starsHtml += '<i class="bi bi-star"></i>';
+            }
+        }
+        return starsHtml;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".average-star-rating").forEach(function (el) {
+            const rating = parseFloat(el.getAttribute("data-rating"));
+            el.innerHTML = renderHalfStars(rating);
+        });
+
+        document.querySelectorAll(".star-rating-view").forEach(function (el) {
+            const rating = parseInt(el.getAttribute("data-rating"));
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += `<i class="bi ${i <= rating ? 'bi-star-fill' : 'bi-star'}"></i>`;
+            }
+            el.innerHTML = stars;
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+    const detailModal = new bootstrap.Modal(document.getElementById("feedbackDetailModal"));
+    const detailBody = document.getElementById("feedbackDetailBody");
+
+    document.querySelectorAll(".clickable-row").forEach(function (row) {
+        row.style.cursor = "pointer";
+        row.addEventListener("click", function () {
+            const feedbackId = this.dataset.id;
+            detailBody.innerHTML = `<div class="text-center py-5"><div class="spinner-border" role="status"></div></div>`;
+            detailModal.show();
+
+            fetch(`/recruitment/feedback-detail/${feedbackId}/`, {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            })
+            .then(response => response.text())
+            .then(html => {
+                detailBody.innerHTML = html;
+            })
+            .catch(() => {
+                detailBody.innerHTML = `<p class="text-danger">Failed to load feedback details.</p>`;
+            });
+        });
+    });
+});
+
+</script>
 
 {% endblock %}
