@@ -83,11 +83,6 @@
                         <button type="submit" class="oh-btn oh-btn--primary oh-btn--small">{% trans "Filter" %}</button>
                         <a href="{% url 'list_interview_feedback' %}" class="oh-btn oh-btn--secondary oh-btn--small">{% trans "Reset" %}</a>
                     </form>
-                    <div class="oh-filter-bar__actions">
-                        <button type="button" class="oh-btn oh-btn--primary oh-btn--small open-feedback-modal" id="openFeedbackBtn" data-interview-id="">
-                            {% trans "Create Feedback" %}
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Table -->
@@ -197,22 +192,31 @@
 
         const modal = new bootstrap.Modal(modalElement);
 
-        openBtn.addEventListener("click", function () {
-            modalBody.innerHTML = `<div class="text-center py-5"><div class="spinner-border" role="status"></div></div>`;
-            modal.show();
+       openBtn.addEventListener("click", function () {
+        const interviewId = openBtn.getAttribute("data-interview-id");
 
-            fetch("{% url 'create-interview-feedback' %}", {
-                headers: { "X-Requested-With": "XMLHttpRequest" }
-            })
-            .then(response => response.text())
-            .then(html => {
-                modalBody.innerHTML = html;
-                initializeFeedbackForm(); // Initialize form logic
-            })
-            .catch(() => {
-                modalBody.innerHTML = `<p class="text-danger">Failed to load the form.</p>`;
-            });
+        if (!interviewId) {
+            modalBody.innerHTML = `<p class="text-danger">Interview ID is missing. Cannot load form.</p>`;
+            modal.show();
+            return;
+        }
+
+        modalBody.innerHTML = `<div class="text-center py-5"><div class="spinner-border" role="status"></div></div>`;
+        modal.show();
+
+        fetch(`/recruitment/feedback/create/${interviewId}/`, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+            initializeFeedbackForm(); // Initialize form logic
+        })
+        .catch(() => {
+            modalBody.innerHTML = `<p class="text-danger">Failed to load the form.</p>`;
         });
+    });
+
     });
 
     function initializeFeedbackForm() {
@@ -281,11 +285,12 @@
                 e.preventDefault();
                 const formData = new FormData(form);
 
-                fetch("{% url 'create-interview-feedback' %}", {
+               fetch(`/recruitment/feedback/create/${interviewId}/`, {
                     method: "POST",
                     headers: { "X-Requested-With": "XMLHttpRequest" },
                     body: formData
                 })
+
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {

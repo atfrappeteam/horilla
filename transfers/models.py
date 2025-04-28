@@ -52,6 +52,11 @@ class EmployeeTransfer(models.Model):
                 self.current_department = work_info.department_id
                 self.current_designation = work_info.designation_id
                 self.current_location = work_info.location
+                if self.new_reporting_manager:
+                    print("<-------change reporting manager---------->")
+                    print(self.new_reporting_manager)
+                    work_info.reporting_manager_id = self.new_reporting_manager
+                work_info.save()
 
         if not self.requests_by and self.employee:
             self.requests_by = self.employee.user
