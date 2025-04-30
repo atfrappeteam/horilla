@@ -375,6 +375,9 @@ class Candidate(HorillaModel):
         related_name="candidate_referral",
         verbose_name=_("Referral"),
     )
+    education = models.TextField(blank=True, null=True,verbose_name=_("Education"))
+    skills = models.TextField(blank=True, null=True,verbose_name=_("Skills"))
+    workexperience=models.TextField(blank=True,null=True,verbose_name=_("Work Experience"))
     address = models.TextField(
         null=True, blank=True, verbose_name=_("Address"), max_length=255
     )

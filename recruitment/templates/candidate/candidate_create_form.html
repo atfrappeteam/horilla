@@ -122,10 +122,10 @@
               var modal_profile = $(this)[0];
               var hidden_profile = $("#hidden_profile")[0];
               hidden_profile.files = modal_profile.files;
-
+          
               const file = this.files[0];
               const reader = new FileReader();
-
+          
               reader.addEventListener("load", function () {
                 const imageUrl = reader.result;
                 $(".preview").attr("src", imageUrl);
@@ -133,66 +133,97 @@
                   $("#uploadPhotoModal").removeClass("oh-modal--show");
                 }, 2000);
               });
-
+          
               reader.readAsDataURL(file);
             });
+          
             {% if not form.instance.pk %}
-              function setIfEmpty(selector, value) {
-                if ($(selector).val() === "" ){
-                  $(selector).val(value);
-                }
-                if ($(selector).val() == "None") {
-                  $(selector).val(value);
-                  $(selector).change();
-
-                  $("[name=country]").parent().find("span").remove()
-                  $("[name=country]").select2()
-                }
+            function setIfEmpty(selector, value) {
+              if ($(selector).val() === "" || $(selector).val() === "None") {
+                $(selector).val(value);
+                $(selector).change();
               }
-
-              $("[name='resume']").on("change", function(){
-                var formData = new FormData();
-                var file = this.files[0];
-                formData.append('resume', file);
-
-                $.ajax({
-                  url: "{% url 'resume-completion' %}",
-                  type: 'POST',
-                  data: formData,
-                  processData: false,
-                  contentType: false,
-                  headers: {
-                      'X-CSRFToken': getCookie("csrftoken")
-                  },
-                  success: function(response) {
-
-                    var full_name = response.full_name;
-                    var address = response.address;
-                    var country = response.country;
-                    var state = response.state;
-                    var phone = response.phone_number;
-                    var dob = response.dob;
-                    var email = response.email_id;
-                    var zip = response.zip;
-
-                    setIfEmpty("[name='name']", full_name);
-                    setIfEmpty("[name='email']", email);
-                    setIfEmpty("[name='mobile']", phone);
-                    setIfEmpty("[name='address']", address);
-                    setIfEmpty("[name='country']", country);
-                    setIfEmpty("[name='state']", state);
-                    setIfEmpty("[name='zip']", zip);
-                    $("[name='dob']").val(dob);
-
-                  },
-                  error: function(xhr, status, error) {
-                      console.error('File upload failed: ', status, error);
+            }
+          
+            $("[name='resume']").on("change", function () {
+              var formData = new FormData();
+              var file = this.files[0];
+              formData.append("resume", file);
+          
+              $.ajax({
+                url: "{% url 'resume-completion' %}",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                  "X-CSRFToken": getCookie("csrftoken"),
+                },
+                success: function (response) {
+                  setIfEmpty("[name='name']", response.full_name);
+                  setIfEmpty("[name='email']", response.email_id);
+                  setIfEmpty("[name='mobile']", response.phone_number);
+                  setIfEmpty("[name='address']", response.address);
+                  setIfEmpty("[name='country']", response.country);
+                  setIfEmpty("[name='state']", response.state);
+                  setIfEmpty("[name='zip']", response.zip);
+                  setIfEmpty("[name='gender']", response.gender);
+                  setIfEmpty("[name='portfolio']", response.portfolio);
+          
+                  $("[name='dob']").val(response.dob);
+          
+                  if (Array.isArray(response.skills)) {
+                    let skillText = response.skills.join(", ");
+                    setIfEmpty("[name='skills']", skillText);
                   }
-                });
-              })
+          
+                  if (Array.isArray(response.education)) {
+                      const cleanedEducation = response.education
+                          .map(edu => edu.replace(/^\d+\.\s*/, '')) // Strip existing numbers
+                          // .reverse(); // Highest education first
+                      const eduText = cleanedEducation
+                                .map((edu, index) => `${index + 1}. ${edu}`)
+                                .join('\n');
+
+                      setIfEmpty("[name='education']", eduText);
+                    }
+
+                  // if (Array.isArray(response.workexperience)) {
+                  //   let workExpText = response.workexperience.join("\n ");
+                  //    setIfEmpty("[name='workexperience']", workExpText);
+                  // }
+                  if (Array.isArray(response.workexperience)) {
+                        let workExpText = "";
+
+                        // Check if the first item is an object (structured format)
+                        if (typeof response.workexperience[0] === "object") {
+                          workExpText = response.workexperience.map(exp => {
+                            let company = exp.company || "Unknown";
+                            let role = exp.role || "Unknown";
+                            let dates = exp.dates || "N/A";
+                            let description = exp.description || "";
+
+                            // Remove extra spacing
+                            return `• ${company} | ${role} (${dates})\n- ${description}`.trim();
+                          }).join("\n");
+                        } else {
+                          // Fallback: plain string entries
+                          workExpText = response.workexperience.map(item => `• ${item.trim()}`).join("\n");
+                        }
+
+                        setIfEmpty("[name='workexperience']", workExpText);
+                      }
+
+                },
+                error: function (xhr, status, error) {
+                  console.error("File upload failed: ", status, error);
+                },
+              });
+            });
             {% endif %}
           });
-        </script>
+          </script>
+          
       </div>
       <script src="{% static '/recruitment/stageScript.js' %}"></script>
       {% endblock content %}
