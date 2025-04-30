@@ -94,7 +94,8 @@ def schedule_daily_work_summaries():
             scheduler.start()
             print("🚀 APScheduler started successfully.")
         else:
-            print("⚠️ Scheduler is already running. Skipping restart.")
+            print()
+            # print("⚠️ Scheduler is already running. Skipping restart.")
     except Exception as e:
         print(f"❌ Error while scheduling daily work summaries: {e}")
 
@@ -136,7 +137,7 @@ def block_unblock_disciplinary():
 
 # Start scheduler only if not running system commands
 if not any(cmd in sys.argv for cmd in ["makemigrations", "migrate", "compilemessages", "flush", "shell"]):
-    print("🚀 Initializing APScheduler background jobs...")
+    # print("🚀 Initializing APScheduler background jobs...")
 
     try:
         DjangoJob.objects.all().delete()  # Clear old scheduler jobs
@@ -148,6 +149,7 @@ if not any(cmd in sys.argv for cmd in ["makemigrations", "migrate", "compilemess
             scheduler.start()
             # print("🚀 APScheduler started successfully.")
         else:
-            print("⚠️ Scheduler is already running. Skipping restart.")
+            print()
+            # print("⚠️ Scheduler is already running. Skipping restart.")
     except Exception as e:
         print(f"❌ Error in initializing scheduler: {e}")

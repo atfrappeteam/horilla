@@ -375,21 +375,24 @@ class CandidateCreationForm(ModelForm):
 
         model = Candidate
         fields = [
+            "resume",
             "profile",
             "name",
             "portfolio",
             "email",
             "mobile",
+            "dob",
             "recruitment_id",
             "job_position_id",
-            "dob",
+            "education",
+            "skills", 
+            "workexperience",           
             "gender",
             "address",
             "source",
             "country",
             "state",
-            "zip",
-            "resume",
+            "zip",            
             "referral",
             "canceled",
             "is_active",
@@ -398,7 +401,13 @@ class CandidateCreationForm(ModelForm):
         widgets = {
             "scheduled_date": forms.DateInput(attrs={"type": "date"}),
             "dob": forms.DateInput(attrs={"type": "date"}),
+            # "education": forms.Textarea(attrs={"rows": 2}),
+            "skills": forms.Textarea(attrs={"rows": 2}),
+            "education": forms.Textarea(attrs={"rows": 2,"style": "white-space: pre-wrap;"  # Preserve line breaks
+              }),
+           "workexperience": forms.Textarea(attrs={"rows":2,"style": "white-space: pre-wrap;"}),
         }
+        
         labels = {
             "name": _("Name"),
             "email": _("Email"),
@@ -440,10 +449,10 @@ class CandidateCreationForm(ModelForm):
         profile = self.cleaned_data["profile"]
         resume = self.cleaned_data["resume"]
         recruitment: Recruitment = self.cleaned_data["recruitment_id"]
-        if not resume and not recruitment.optional_resume:
-            errors["resume"] = _("This field is required")
-        if not profile and not recruitment.optional_profile_image:
-            errors["profile"] = _("This field is required")
+        # if not resume and not recruitment.optional_resume:
+        #     errors["resume"] = _("This field is required")
+        # if not profile and not recruitment.optional_profile_image:
+        #     errors["profile"] = _("This field is required")
         if self.instance.name is not None:
             self.errors.pop("job_position_id", None)
             if (

@@ -128,8 +128,7 @@
                 class="oh-profile-section__avatar preview"
                 alt="Username"
                 style="border-radius:10%"
-                onmouseover="showImage(this)
-                  $('#showImageContainer').addClass('enlarge-image-container');
+                onmouseover="showImage(this)$('#showImageContainer').addClass('enlarge-image-container');
                 "
                 onmouseout="hideshowImage()
                   $('#showImageContainer').removeClass('enlarge-image-container');
@@ -295,7 +294,7 @@
           id="personal"
         >
           <div class="row">
-            <div class="col-sm-12 col-md-12 col-lg-4">
+            <div class="col-sm-12 col-md-12 col-lg-6">
               <div class="oh-card oh-card--margin">
                 <div class="oh-card__header">
                   <span class="oh-card__title oh-card__title--sm fw-bold me-2"
@@ -362,13 +361,13 @@
                 </div>
               </div>
             </div>
-            <div class="col-sm-12 col-md-12 col-lg-8">
+            <div class="col-sm-12 col-md-12 col-lg-6">
               <div class="oh-card oh-card--margin">
                 <div class="oh-card__header">
                   <span class="oh-card__title oh-card__title--sm fw-bold me-2"
                     >{% trans "Recruitment Information" %}</span
                   >
-                </div>
+               </div>
                 <div class="oh-card__body mt-4">
                   <div class="row">
                     <div class="col-12 col-sm-12 col-md-12 col-lg-6">
@@ -440,13 +439,66 @@
                           >
                         </li>
                       </ul>
+                      
                     </div>
+                  </div>
+                  
+                </div>
+              </div>
+                  <!-- Add this new card block just below the closing </div> for the recruitment card -->
+                  <!-- Add this new card block just below the closing </div> for the recruitment card -->
+                  <div class="col-sm-12 col-md-12 col-lg-12">
+                    <div class="oh-card oh-card--margin">
+                        <div class="oh-card__header">
+                            <span class="oh-card__title oh-card__title--sm fw-bold me-2">
+                                {% trans "Skills & Background" %}
+                            </span>
+                        </div>
+                        <div class="oh-card__body mt-4">
+                            <ul class="oh-profile__card-info-list">
+                                <li class="oh-profile__card-info-item">
+                                    <span class="oh-profile__info-label mb-1">
+                                        <ion-icon name="book-outline"></ion-icon>
+                                        <span>{% trans "Education" %}</span>
+                                    </span>
+                                    <p class="oh-profile__info-value mb-0">
+                                      {{ candidate.education|linebreaksbr }}
+
+                                    </p>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="oh-card__body mt-4">
+                            <ul class="oh-profile__card-info-list">
+                                <li class="oh-profile__card-info-item">
+                                    <span class="oh-profile__info-label mb-1">
+                                        <ion-icon name="ribbon-outline"></ion-icon>
+                                        <span>{% trans "Skills" %}</span>
+                                    </span>
+                                    <p class="oh-profile__info-value mb-0">
+                                        {{candidate.skills}}
+                                    </p>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="oh-card__body mt-4">
+                            <ul class="oh-profile__card-info-list">
+                                <li class="oh-profile__card-info-item">
+                                    <span class="oh-profile__info-label mb-1">
+                                        <ion-icon name="id-card-outline"></ion-icon>
+                                        <span>{% trans "work Experience" %}</span>
+                                    </span>
+                                    <p class="oh-profile__info-value mb-0">
+                                        {{candidate.workexperience|linebreaksbr}}
+                                    </p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div> <!-- Closing div for oh-card oh-card--margin -->
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
         <div
           class="oh-general__tab-target oh-profile__info-tab mb-4 d-none"

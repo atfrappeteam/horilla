@@ -112,6 +112,7 @@ venv.bak/
 # Spyder project settings
 .spyderproject
 .spyproject
+.idea/
 
 # Rope project settings
 .ropeproject
@@ -156,3 +157,4 @@ whoosh_index/
 !/.env-copy
 
 .env.dist
+horillavenv/Scripts/python.exe

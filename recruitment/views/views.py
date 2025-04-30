@@ -10,7 +10,12 @@ actions to handle the request, process data, and generate a response.
 This module is part of the recruitment project and is intended to
 provide the main entry points for interacting with the application's functionality.
 """
-
+import fitz  # PyMuPDF
+import io
+import re
+import spacy
+from datetime import datetime
+from django.http import JsonResponse
 import ast
 import contextlib
 import io
@@ -2795,170 +2800,170 @@ def delete_reject_reason(request):
     return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
 
-def extract_text_with_font_info(pdf):
-    """
-    This method is used to extract text from the pdf and create a list of dictionaries containing details about the extracted text.
-    Args:
-        pdf (): pdf file to extract text from
-    """
-    pdf_bytes = pdf.read()
-    pdf_doc = io.BytesIO(pdf_bytes)
-    doc = fitz.open("pdf", pdf_doc)
-    text_info = []
+# def extract_text_with_font_info(pdf):
+#     """
+#     This method is used to extract text from the pdf and create a list of dictionaries containing details about the extracted text.
+#     Args:
+#         pdf (): pdf file to extract text from
+#     """
+#     pdf_bytes = pdf.read()
+#     pdf_doc = io.BytesIO(pdf_bytes)
+#     doc = fitz.open("pdf", pdf_doc)
+#     text_info = []
 
-    for page_num in range(len(doc)):
-        page = doc[page_num]
-        blocks = page.get_text("dict")["blocks"]
-        for block in blocks:
-            try:
-                for line in block["lines"]:
-                    for span in line["spans"]:
-                        text_info.append(
-                            {
-                                "text": span["text"],
-                                "font_size": span["size"],
-                                "capitalization": sum(
-                                    1 for c in span["text"] if c.isupper()
-                                )
-                                / len(span["text"]),
-                            }
-                        )
-            except:
-                pass
+#     for page_num in range(len(doc)):
+#         page = doc[page_num]
+#         blocks = page.get_text("dict")["blocks"]
+#         for block in blocks:
+#             try:
+#                 for line in block["lines"]:
+#                     for span in line["spans"]:
+#                         text_info.append(
+#                             {
+#                                 "text": span["text"],
+#                                 "font_size": span["size"],
+#                                 "capitalization": sum(
+#                                     1 for c in span["text"] if c.isupper()
+#                                 )
+#                                 / len(span["text"]),
+#                             }
+#                         )
+#             except:
+#                 pass
 
-    return text_info
-
-
-def rank_text(text_info):
-    """
-    This method is used to rank the text
-
-    Args:
-        text_info: List of dictionary containing the details
-
-    Returns:
-        Returns a sorted list
-    """
-    ranked_text = sorted(
-        text_info, key=lambda x: (x["font_size"], x["capitalization"]), reverse=True
-    )
-    return ranked_text
+#     return text_info
 
 
-def dob_matching(dob):
-    """
-    This method is used to change the date format to YYYY-MM-DD
+# def rank_text(text_info):
+#     """
+#     This method is used to rank the text
 
-    Args:
-        dob: Date
+#     Args:
+#         text_info: List of dictionary containing the details
 
-    Returns:
-        Return date in YYYY-MM-DD
-    """
-    date_formats = [
-        "%Y-%m-%d",
-        "%Y/%m/%d",
-        "%d-%m-%Y",
-        "%d/%m/%Y",
-        "%Y.%m.%d",
-        "%d.%m.%Y",
-    ]
-
-    for fmt in date_formats:
-        try:
-            parsed_date = datetime.strptime(dob, fmt)
-            return parsed_date.strftime("%Y-%m-%d")
-        except ValueError:
-            continue
-
-    return dob
+#     Returns:
+#         Returns a sorted list
+#     """
+#     ranked_text = sorted(
+#         text_info, key=lambda x: (x["font_size"], x["capitalization"]), reverse=True
+#     )
+#     return ranked_text
 
 
-def extract_info(pdf):
-    """
-    This method creates the contact information dictionary from the provided pdf file
-    Args:
-        pdf_file: pdf file
-    """
+# def dob_matching(dob):
+#     """
+#     This method is used to change the date format to YYYY-MM-DD
 
-    text_info = extract_text_with_font_info(pdf)
-    ranked_text = rank_text(text_info)
+#     Args:
+#         dob: Date
 
-    phone_pattern = re.compile(r"\b\+?\d{1,2}\s?\d{9,10}\b")
-    dob_pattern = re.compile(
-        r"\b(?:\d{1,2}|\d{4})[-/.,]\d{1,2}[-/.,](?:\d{1,2}|\d{4})\b"
-    )
-    email_pattern = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
-    zip_code_pattern = re.compile(r"\b\d{5,6}(?:-\d{4})?\b")
+#     Returns:
+#         Return date in YYYY-MM-DD
+#     """
+#     date_formats = [
+#         "%Y-%m-%d",
+#         "%Y/%m/%d",
+#         "%d-%m-%Y",
+#         "%d/%m/%Y",
+#         "%Y.%m.%d",
+#         "%d.%m.%Y",
+#     ]
 
-    extracted_info = {
-        "full_name": "",
-        "address": "",
-        "country": "",
-        "state": "",
-        "phone_number": "",
-        "dob": "",
-        "email_id": "",
-        "zip": "",
-    }
+#     for fmt in date_formats:
+#         try:
+#             parsed_date = datetime.strptime(dob, fmt)
+#             return parsed_date.strftime("%Y-%m-%d")
+#         except ValueError:
+#             continue
 
-    name_candidates = [
-        item["text"]
-        for item in ranked_text
-        if item["font_size"] == max(item["font_size"] for item in ranked_text)
-    ]
-
-    if name_candidates:
-        extracted_info["full_name"] = " ".join(name_candidates)
-
-    for item in ranked_text:
-        text = item["text"]
-
-        if not text:
-            continue
-
-        if not extracted_info["phone_number"]:
-            phone_match = phone_pattern.search(text)
-            if phone_match:
-                extracted_info["phone_number"] = phone_match.group()
-
-        if not extracted_info["dob"]:
-            dob_match = dob_pattern.search(text)
-            if dob_match:
-                extracted_info["dob"] = dob_matching(dob_match.group())
-
-        if not extracted_info["zip"]:
-            zip_match = zip_code_pattern.search(text)
-            if zip_match:
-                extracted_info["zip"] = zip_match.group()
-
-        if not extracted_info["email_id"]:
-            email_match = email_pattern.search(text)
-            if email_match:
-                extracted_info["email_id"] = email_match.group()
-
-        if "address" in text.lower() and not extracted_info["address"]:
-            extracted_info["address"] = text.replace("Address:", "").strip()
-
-        for item in text.split(" "):
-            if item.capitalize() in country_arr:
-                extracted_info["country"] = item
-
-        for item in text.split(" "):
-            if item.capitalize() in states:
-                extracted_info["state"] = item
-
-    return extracted_info
+#     return dob
 
 
-def resume_completion(request):
-    """
-    This function is returns the data for completing the candidate creation form
-    """
-    resume_file = request.FILES["resume"]
-    contact_info = extract_info(resume_file)
+# def extract_info(pdf):
+#     """
+#     This method creates the contact information dictionary from the provided pdf file
+#     Args:
+#         pdf_file: pdf file
+#     """
 
-    return JsonResponse(contact_info)
+#     text_info = extract_text_with_font_info(pdf)
+#     ranked_text = rank_text(text_info)
+
+#     phone_pattern = re.compile(r"\b\+?\d{1,2}\s?\d{9,10}\b")
+#     dob_pattern = re.compile(
+#         r"\b(?:\d{1,2}|\d{4})[-/.,]\d{1,2}[-/.,](?:\d{1,2}|\d{4})\b"
+#     )
+#     email_pattern = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
+#     zip_code_pattern = re.compile(r"\b\d{5,6}(?:-\d{4})?\b")
+
+#     extracted_info = {
+#         "full_name": "",
+#         "address": "",
+#         "country": "",
+#         "state": "",
+#         "phone_number": "",
+#         "dob": "",
+#         "email_id": "",
+#         "zip": "",
+#     }
+
+#     name_candidates = [
+#         item["text"]
+#         for item in ranked_text
+#         if item["font_size"] == max(item["font_size"] for item in ranked_text)
+#     ]
+
+#     if name_candidates:
+#         extracted_info["full_name"] = " ".join(name_candidates)
+
+#     for item in ranked_text:
+#         text = item["text"]
+
+#         if not text:
+#             continue
+
+#         if not extracted_info["phone_number"]:
+#             phone_match = phone_pattern.search(text)
+#             if phone_match:
+#                 extracted_info["phone_number"] = phone_match.group()
+
+#         if not extracted_info["dob"]:
+#             dob_match = dob_pattern.search(text)
+#             if dob_match:
+#                 extracted_info["dob"] = dob_matching(dob_match.group())
+
+#         if not extracted_info["zip"]:
+#             zip_match = zip_code_pattern.search(text)
+#             if zip_match:
+#                 extracted_info["zip"] = zip_match.group()
+
+#         if not extracted_info["email_id"]:
+#             email_match = email_pattern.search(text)
+#             if email_match:
+#                 extracted_info["email_id"] = email_match.group()
+
+#         if "address" in text.lower() and not extracted_info["address"]:
+#             extracted_info["address"] = text.replace("Address:", "").strip()
+
+#         for item in text.split(" "):
+#             if item.capitalize() in country_arr:
+#                 extracted_info["country"] = item
+
+#         for item in text.split(" "):
+#             if item.capitalize() in states:
+#                 extracted_info["state"] = item
+
+#     return extracted_info
+
+
+# def resume_completion(request):
+#     """
+#     This function is returns the data for completing the candidate creation form
+#     """
+#     resume_file = request.FILES["resume"]
+#     contact_info = extract_info(resume_file)
+
+#     return JsonResponse(contact_info)
 
 
 def check_vaccancy(request):
@@ -3140,41 +3145,41 @@ def matching_resumes(request, rec_id):
     is_candidate = resumes.filter(is_candidate=True)
     is_candidate_ids = set(is_candidate.values_list("id", flat=True))
 
-    resume_ranks = []
-    for resume in resumes:
-        words = extract_words_from_pdf(resume.file)
-        matching_skills_count = sum(skill.lower() in words for skill in skills)
+    # resume_ranks = []
+    # for resume in resumes:
+    #     # words = extract_words_from_pdf(resume.file)
+    #     matching_skills_count = sum(skill.lower() in words for skill in skills)
 
-        item = {"resume": resume, "matching_skills_count": matching_skills_count}
-        if not len(words):
-            item["image_pdf"] = True
+    #     item = {"resume": resume, "matching_skills_count": matching_skills_count}
+    #     # if not len(words):
+    #     #     item["image_pdf"] = True
 
-        resume_ranks.append(item)
+    #     # resume_ranks.append(item)
 
-    candidate_resumes = [
-        rank for rank in resume_ranks if rank["resume"].id in is_candidate_ids
-    ]
-    non_candidate_resumes = [
-        rank for rank in resume_ranks if rank["resume"].id not in is_candidate_ids
-    ]
+    # candidate_resumes = [
+    #     rank for rank in resume_ranks if rank["resume"].id in is_candidate_ids
+    # ]
+    # non_candidate_resumes = [
+    #     rank for rank in resume_ranks if rank["resume"].id not in is_candidate_ids
+    # ]
 
-    non_candidate_resumes = sorted(
-        non_candidate_resumes, key=lambda x: x["matching_skills_count"], reverse=True
-    )
-    candidate_resumes = sorted(
-        candidate_resumes, key=lambda x: x["matching_skills_count"], reverse=True
-    )
+    # non_candidate_resumes = sorted(
+    #     non_candidate_resumes, key=lambda x: x["matching_skills_count"], reverse=True
+    # )
+    # candidate_resumes = sorted(
+    #     candidate_resumes, key=lambda x: x["matching_skills_count"], reverse=True
+    # )
 
-    ranked_resumes = non_candidate_resumes + candidate_resumes
+    # ranked_resumes = non_candidate_resumes + candidate_resumes
 
-    return render(
-        request,
-        "pipeline/matching_resumes.html",
-        {
-            "matched_resumes": ranked_resumes,
-            "rec_id": rec_id,
-        },
-    )
+    # return render(
+    #     request,
+    #     "pipeline/matching_resumes.html",
+    #     {
+    #         "matched_resumes": ranked_resumes,
+    #         "rec_id": rec_id,
+    #     },
+    # )
 
 
 @login_required
@@ -3186,9 +3191,9 @@ def matching_resume_completion(request):
     resume_id = request.GET.get("resume_id")
     resume_obj = get_object_or_404(Resume, id=resume_id)
     resume_file = resume_obj.file
-    contact_info = extract_info(resume_file)
+    # contact_info = extract_info(resume_file)
 
-    return JsonResponse(contact_info)
+    # return JsonResponse(contact_info)
 
 
 @login_required
@@ -3772,3 +3777,232 @@ def get_interview_details(request, interview_schedule_id):
 def feedback_detail_view(request, pk):
     feedback = get_object_or_404(InterviewFeedback, pk=pk)
     return render(request, "feedback/feedback_view.html", {"feedback": feedback})
+
+##############################################################################################
+
+nlp = spacy.load("en_core_web_sm")
+
+portfolio_pattern = re.compile(r"(https?://[^\s]+)")
+skills_keywords = [
+    "python", "java", "c++", "c", "c#", "javascript", "typescript", "go", "ruby", "php", "kotlin", "swift", "r", "scala","html", "css", "sass", "bootstrap", "tailwind", "react", "angular", "vue", "nextjs", "nodejs", "express", "jquery","django", "flask", "spring", "laravel", "rails", "fastapi", "asp.net",
+    "sql", "mysql", "postgresql", "mongodb", "nosql", "sqlite", "redis", "firebase","docker", "kubernetes", "jenkins", "aws", "azure", "gcp", "terraform", "ansible", "ci/cd","machine learning", "deep learning", "tensorflow", "pytorch", "pandas", "numpy", "scikit-learn", "matplotlib", "seaborn", "nlp", "data analysis", "data visualization",
+    "git", "github", "gitlab", "bitbucket", "selenium", "junit", "postman", "swagger","linux", "bash", "api development", "rest api", "graphql", "web scraping", "unity", "game development","teamwork", "communication", "problem solving", "leadership", "agile", "scrum"]
+edu_keywords = ["bachelor", "master", "bcs","mcs","phd", "B.E.","b.tech","bca","mca","diploma","computer science","m.tech", "degree", "diploma", "graduated", "university","post graduation","msc","graduation","12th","10th","hsc","ssc","s.s.c","comp sci"]
+gender_keywords = ["male", "female", "non-binary", "transgender", "gender"]
+
+def extract_text(pdf):
+    pdf_bytes = pdf.read()
+    doc = fitz.open("pdf", io.BytesIO(pdf_bytes))
+    full_text = ""
+    for page in doc:
+        full_text += page.get_text("text")  # Added mode for better accuracy
+    return full_text
+
+def extract_info_nlp(pdf):
+    text = extract_text(pdf)
+    doc = nlp(text.lower())
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    extracted_info = {
+        "full_name": "",
+        "email_id": "",
+        "phone_number": "",
+        "dob": "",
+        "address": "",
+        "country": "",
+        "state": "",
+        "zip": "",
+        "gender": "",
+        "portfolio": "",
+        "skills": [],
+        "education": [],
+        "workexperience":[]
+    }
+
+    #  1. Name detection
+    for ent in doc.ents:
+        if ent.label_ == "PERSON" and len(ent.text.split()) <= 4 and ent.text.istitle():
+            extracted_info["full_name"] = ent.text.strip().title()
+            break
+
+    # fallback from top lines
+    if not extracted_info["full_name"]:
+        for line in lines[:10]:
+            line_clean = line.strip()
+            if (len(line_clean.split()) in [2, 3]) and line_clean[0].isupper() and not any(x in line.lower() for x in ["email", "phone", "@", "address"]):
+                extracted_info["full_name"] = line_clean
+                break
+    if not extracted_info["full_name"] and extracted_info["email_id"]:
+        extracted_info["full_name"] = extracted_info["email_id"].split('@')[0].replace('.', ' ').replace('_', ' ').title()
+
+    # 2. Portfolio (github, personal site, behance, etc.)
+    portfolio_match = re.findall(r"https?://(?:www\.)?[^\s,()<>\"\']+", text)
+    for url in portfolio_match:
+        if any(x in url.lower() for x in ["github", "portfolio", "linkedin", "behance", "dribbble", "about.me"]):
+            extracted_info["portfolio"] = url.strip()
+            break
+
+    # 3. Skills from keywords + NLP tokens
+    # Enhanced skill extraction
+    text_lower = text.lower()
+    skill_set = set()
+    # Match exact keywords using regex in raw text
+    for skill in skills_keywords:
+        if re.search(rf"\b{re.escape(skill)}\b", text_lower):
+            skill_set.add(skill)
+            # Also check in NLP tokens
+    skill_set.update(token.text.lower() for token in doc if token.text.lower() in skills_keywords)
+
+# Normalize, remove duplicates, sort, and format for display
+    extracted_info["skills"] = sorted({skill.title() for skill in skill_set})
+
+
+    
+ # 4. Education (improved context & deduplication)
+    education_entries = []
+
+    for i, line in enumerate(lines):
+        line_lower = line.lower()
+
+    # Check current line for keywords
+        if any(kw in line_lower for kw in edu_keywords):
+            entry = line.strip()
+
+        # Check next line for year and keyword context
+            if i < len(lines) - 1:
+                next_line = lines[i + 1].strip()
+                if (
+                    re.search(r"\b(20[0-3][0-9]|19[8-9][0-9])\b", next_line)
+                    and any(kw in next_line.lower() for kw in edu_keywords)
+                    ):
+                      entry = f"{entry}; {next_line}"
+
+        # Avoid duplicates or partial matches
+            if not any(entry in existing or existing in entry for existing in education_entries):
+                # Split by semicolons if multiple degrees are in one line
+                split_entries = [e.strip() for e in entry.split(";") if e.strip()]
+                education_entries.extend(split_entries)
+                # education_entries.append(entry)
+
+    # Format education entries into numbered list
+    # extracted_info["education"] = education_entries
+    # Store as a list of numbered entries
+    extracted_info["education"] = [f"{idx + 1}. {edu}" for idx, edu in enumerate(education_entries)]
+
+    # 5. Address extraction (try direct, fallback to GPE chunks)
+    address_keywords = ["address", "current address", "permanent address"]
+    capturing_address = False
+    captured_address_lines = []
+    for i, line in enumerate(lines):
+        if any(kw in line.lower() for kw in address_keywords):
+            capturing_address = True
+            captured_address_lines.append(line.strip())
+             # Check next 2 lines for continuation
+            for j in range(1, 3):
+                if i + j < len(lines):
+                    next_line = lines[i + j].strip()
+                    if next_line and not any(x in next_line.lower() for x in ["email", "phone", "@", "dob"]):
+                        captured_address_lines.append(next_line)
+            break  # Stop after first matched address
+    if captured_address_lines:
+        extracted_info["address"] = " ".join(captured_address_lines).strip()
+    else:
+    # Fallback: Combine 2–3 GPEs like City, State, Country
+       gpes = [ent.text.title() for ent in doc.ents if ent.label_ == "GPE"]
+       if len(gpes) >= 2:
+           extracted_info["address"] = ", ".join(gpes[:3])
+
+
+    #6. Zip extraction (from full text or from address)
+    zip_match = re.search(r"\b\d{5,6}\b", extracted_info["address"]) or re.search(r"\b\d{5,6}\b", text)
+    if zip_match:
+        extracted_info["zip"] = zip_match.group()
+
+    # 7. Email, Phone (already good)
+    email_match = re.search(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", text)
+    phone_match = re.findall(r"\b\d{10}\b", text)  # Match only clean 10-digit numbers
+    if email_match:
+        extracted_info["email_id"] = email_match.group()
+    if phone_match:
+        extracted_info["phone_number"] = phone_match[0]  # Take first match
+
+    # 8. DOB via NER
+    for ent in doc.ents:
+        if ent.label_ == "DATE" and not extracted_info["dob"]:
+            try:
+                extracted_info["dob"] = dob_matching(re.sub(r"[^\w\s,/-]", "", ent.text))
+            except:
+                continue
+
+    # 9. Country & State
+    gpe_seen = set()
+    for ent in doc.ents:
+        if ent.label_ == "GPE" and ent.text.title() not in gpe_seen:
+            if not extracted_info["country"]:
+                extracted_info["country"] = ent.text.title()
+            elif not extracted_info["state"]:
+                extracted_info["state"] = ent.text.title()
+            gpe_seen.add(ent.text.title())
+
+    
+    for g in gender_keywords:
+        if g in text.lower():
+            extracted_info["gender"] = g.title()
+            break
+
+  # 10. Work Experience Extraction (line-based + year-based pattern detection)
+    experience_keywords = [
+        "experience", "intern", "internship", "worked", "employed",
+        "role", "position", "responsibilities", "consultant", "associate",
+        "engineer", "developer", "analyst", "worked at", "employed at"
+    ]
+
+    experience_entries = []
+
+    for i, line in enumerate(lines):
+        line_lower = line.lower().strip()
+
+        if any(kw in line_lower for kw in experience_keywords):
+            entry = line.strip()
+
+            # Check next 2 lines for possible duration or company info
+            next_lines = []
+            for j in range(1, 4):
+                if i + j < len(lines):
+                    next_line = lines[i + j].strip()
+                    if (
+                        any(word in next_line.lower() for word in ["to", "-", "present", "duration", "years", "months"])
+                        or re.search(r"\b(20\d{2}|19\d{2})\b", next_line)
+                    ):
+                        next_lines.append(next_line)
+    
+            # Combine entry and next lines
+            full_entry = "; ".join([entry] + next_lines)
+
+            # Avoid duplicates or similar entries
+            if not any(full_entry in existing or existing in full_entry for existing in experience_entries):
+                experience_entries.append(full_entry)
+
+    extracted_info["workexperience"] = experience_entries
+
+    return extracted_info
+
+
+def dob_matching(dob):
+    date_formats = [
+        "%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y", "%Y.%m.%d", "%d.%m.%Y",
+        "%d %B %Y", "%B %d, %Y", "%b %d, %Y", "%d %b %Y"  # ✅ Added "%d %b %Y"
+    ]
+    for fmt in date_formats:
+        try:
+            return datetime.strptime(dob.strip(), fmt).strftime("%Y-%m-%d")
+        except:
+            continue
+    return dob
+
+
+def resume_completion(request):
+    resume_file = request.FILES["resume"]
+    info = extract_info_nlp(resume_file)
+    return JsonResponse(info)
+
+
