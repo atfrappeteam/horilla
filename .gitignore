@@ -157,4 +157,4 @@ whoosh_index/
 !/.env-copy
 
 .env.dist
-.idea/.gitignore
+horillavenv/Scripts/python.exe
