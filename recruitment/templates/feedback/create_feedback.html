@@ -4,149 +4,286 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
 
 <style>
-    .star-rating {
-        font-size: 1.5rem;
-        color: #ddd;
+    .star-rating i {
+        font-size: 1.6rem;
+        color: #ddd !important;
         cursor: pointer;
     }
-
-    .star-rating .bi-star-fill {
-        color: gold;
+    .star-rating i.filled {
+        color: gold !important;
     }
     .form-error {
         color: red;
         font-size: 0.9rem;
         margin-top: 4px;
     }
+
+    .modal-title.mb-3 {
+     /* Add margin on all sides */
+    padding: 10px; /* Add some padding inside the title */
+}
+
+    .alert.alert-danger.mb-3 {
+    margin: 15px; /* Add margin on all sides */
+    padding: 10px; /* Add some padding inside the alert box */
+    border-radius: 5px; /* Optional: Add rounded corners */
+    border: 1px solid #f5c6cb; /* Optional: Keep a subtle border */
+    background-color: #f8d7da; /* Optional: Keep the background color */
+    color: #721c24; /* Optional: Keep the text color */
+}
 </style>
 
-<div class="container mt-4">
-    <form method="post" action="{% url 'create-interview-feedback' %}" id="feedbackForm">
-        {% csrf_token %}
-
-        {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-                {{ form.non_field_errors }}
-            </div>
-        {% endif %}
-
-        <div class="form-group mb-3">
-            {{ form.interview.label_tag }}
-            {{ form.interview }}
-            {% if form.interview.errors %}
-                <div class="form-error">{{ form.interview.errors.0 }}</div>
-            {% endif %}
-        </div>
-
-        <div class="form-group mb-3" id="round-group" style="display:none;">
-            <label>Interview Round:</label>
-            <p id="round-text" class="form-control-plaintext"></p>
-            {{ form.interview_round }}
-        </div>
-
-        <div class="form-group mb-3" id="interviewer-group" style="display:none;">
-            <label>Interviewer:</label>
-            <p id="interviewer-text" class="form-control-plaintext"></p>
-            {{ form.interviewer }}
-        </div>
-
-        {% for field in form %}
-            {% if field.name in skills %}
-                <div class="form-group mb-3">
-                    <label>{{ field.label }}</label>
-                    <div class="star-rating" data-field="{{ field.name }}">
-                        {% for i in "12345" %}
-                            <i class="bi bi-star" data-value="{{ i }}"></i>
-                        {% endfor %}
-                    </div>
-                    <input type="hidden" name="{{ field.name }}" id="id_{{ field.name }}" />
+<div id="feedbackModal">
+    <div id="modalContent">
+        <h5 class="modal-title mb-3">Interview Feedback</h5>
+        <div id="createTarget">
+            <!-- Check if the error message exists -->
+            {% if error_msg %}
+                <!-- Only show the error message and hide the form -->
+                <div class="alert alert-danger mb-3">
+                    {{ error_msg }}
                 </div>
-            {% endif %}
-        {% endfor %}
+            {% else %}
+                <!-- The form is displayed only if there's no error message -->
+                <form
+                  id="feedbackForm"
+                  method="POST"
+                  hx-post="{% url 'create-interview-feedback' pk=interview.pk %}"
+                  hx-target="#createTarget"
+                  hx-swap="outerHTML"
+                >
+                    {% csrf_token %}
 
-        <div class="form-group mb-3">
-            {{ form.remark.label_tag }}
-            {{ form.remark }}
-            {% if form.remark.errors %}
-                <div class="form-error">{{ form.remark.errors.0 }}</div>
+                    <div class="form-group mb-3">
+                        {% if interview %}
+                            <label>Interview:</label>
+                            <p class="form-control-plaintext">{{ interview }}</p>
+                            <input type="hidden" name="interview" value="{{ interview.pk }}">
+                        {% else %}
+                            {{ form.interview.label_tag }}
+                            {{ form.interview }}
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3" id="round-group">
+                        <label for="interview_round_text">Interview Round:</label>
+                        {% if form.interview_round %}
+                            <p class="form-control-plaintext" id="interview_round_text">
+                                {{ form.interview_round.value }}
+                            </p>
+                            {{ form.interview_round.as_hidden }}
+                        {% else %}
+                            <p class="form-control-plaintext" id="interview_round_text"></p>
+                            <input type="hidden" name="interview_round" id="id_interview_round">
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3" id="interviewer-group">
+                        <label for="interviewer_text">Interviewer:</label>
+                        {% if form.interviewer %}
+                            <p class="form-control-plaintext" id="interviewer_text">
+                                {{ form.interviewer.value }}
+                            </p>
+                            {{ form.interviewer.as_hidden }}
+                        {% else %}
+                            <p class="form-control-plaintext" id="interviewer_text"></p>
+                            <input type="hidden" name="interviewer" id="id_interviewer">
+                        {% endif %}
+                    </div>
+
+                    {% for field in form %}
+                        {% if field.name in skills %}
+                            <div class="form-group mb-3">
+                                <label for="id_{{ field.name }}">{{ field.label }}</label>
+                                <div class="star-rating" data-field="{{ field.name }}" id="rating_{{ field.name }}">
+                                    {% for i in "12345" %}
+                                        <i class="bi bi-star" data-value="{{ i }}"></i>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="{{ field.name }}" id="id_{{ field.name }}" />
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <div class="form-group mb-3">
+                        {{ form.remark.label_tag }}
+                        {{ form.remark }}
+                        {% if form.remark.errors %}
+                            <div class="form-error">{{ form.remark.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        {{ form.result.label_tag }}
+                        {{ form.result }}
+                        {% if form.result.errors %}
+                            <div class="form-error">{{ form.result.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div id="errorMessages" class="mt-2"></div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary me-2" id="submitFeedbackButton">Submit Feedback</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    </div>
+                </form>
             {% endif %}
         </div>
-
-        <div class="form-group mb-3">
-            {{ form.result.label_tag }}
-            {{ form.result }}
-            {% if form.result.errors %}
-                <div class="form-error">{{ form.result.errors.0 }}</div>
-            {% endif %}
-        </div>
-
-        <button type="submit" class="btn btn-primary">Submit Feedback</button>
-    </form>
+    </div>
 </div>
 
+
 <script>
-    function initializeFeedbackForm() {
-        const roundGroup = document.getElementById("round-group");
-        const interviewerGroup = document.getElementById("interviewer-group");
+function bindFeedbackForm() {
+    const form = document.getElementById("feedbackForm");
+    if (!form) return;
 
-        const interviewSelect = document.getElementById("id_interview");
-        const roundField = document.getElementById("id_interview_round");
-        const interviewerField = document.getElementById("id_interviewer");
+    initializeStarRatings();
+    initializeInterviewDetails();
+}
 
-        if (interviewSelect) {
-            interviewSelect.addEventListener("change", function () {
-                const interviewId = this.value;
-                if (interviewId) {
-                    fetch(`/recruitment/get-interview-details/${interviewId}/`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.round_id) {
-                                roundField.disabled = false;
-                                roundField.value = data.round_id;
+function initializeInterviewDetails() {
+    const roundField = document.getElementById("id_interview_round");
+    const interviewerField = document.getElementById("id_interviewer");
+    const interviewInput = document.querySelector("input[name='interview']");
+    if (!interviewInput) return;
 
-                                const roundText = roundField.options[roundField.selectedIndex].text;
-                                document.getElementById("round-text").textContent = roundText;
+    const interviewId = interviewInput.value;
+    fetch(`/recruitment/get-interview-details/${interviewId}/`)
+        .then(res => res.json())
+        .then(data => {
+            // Set round details
+            if (data.round_id) {
+                roundField.value = data.round_id;
+                document.getElementById("interview_round_text").textContent =
+                    data.round_name || `Round ID: ${data.round_id}`;
+            }
 
-                                roundGroup.style.display = "block";
-                            }
+            // Set interviewer(s)
+            if (data.interviewer_ids?.length > 0) {
+                // You can show all names together
+                document.getElementById("interviewer_text").textContent =
+                    data.interviewer_names.join(", ");
 
-                            if (data.interviewer_ids.length > 0) {
-                                interviewerField.disabled = false;
-                                interviewerField.value = data.interviewer_ids[0];
-
-                                const interviewerText = interviewerField.options[interviewerField.selectedIndex].text;
-                                document.getElementById("interviewer-text").textContent = interviewerText;
-
-                                interviewerGroup.style.display = "block";
-                            }
-                        });
-                }
-            });
-        }
-
-        // Star rating
-        document.querySelectorAll(".star-rating").forEach(function (ratingDiv) {
-            const fieldName = ratingDiv.dataset.field;
-            const stars = ratingDiv.querySelectorAll("i");
-            const hiddenInput = document.getElementById(`id_${fieldName}`);
-
-            stars.forEach(function (star) {
-                star.addEventListener("click", function () {
-                    const ratingValue = parseInt(this.dataset.value);
-                    hiddenInput.value = ratingValue;
-
-                    stars.forEach(s => {
-                        s.classList.remove("bi-star-fill");
-                        s.classList.add("bi-star");
+                // If interviewerField is a <select>, set multiple values
+                if (interviewerField.tagName === "SELECT" && interviewerField.multiple) {
+                    Array.from(interviewerField.options).forEach(option => {
+                        option.selected = data.interviewer_ids.includes(parseInt(option.value));
                     });
+                } else {
+                    // If it's just a normal input, show the first one
+                    interviewerField.value = data.interviewer_ids[0];
+                }
+            }
+        })
+        .catch(err => console.error("❌ Failed to fetch interview details:", err));
+}
 
-                    for (let i = 0; i < ratingValue; i++) {
-                        stars[i].classList.remove("bi-star");
-                        stars[i].classList.add("bi-star-fill");
-                    }
+function initializeStarRatings() {
+    document.querySelectorAll(".star-rating").forEach(container => {
+        const input = document.getElementById(`id_${container.dataset.field}`);
+        const stars = container.querySelectorAll("i");
+
+        stars.forEach((star, index) => {
+            star.addEventListener("click", () => {
+                const value = index + 1;
+                input.value = value;
+                stars.forEach((s, i) => {
+                    s.classList.toggle("filled", i < value);
+                    s.classList.toggle("bi-star-fill", i < value);
+                    s.classList.toggle("bi-star", i >= value);
                 });
             });
         });
+    });
+}
 
+function closeModal() {
+    console.log("Modal close triggered");
+    const modal = document.getElementById("feedbackModal");
+    if (modal) {
+        modal.style.display = "none";
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+    }
+    window.location.reload()
+}
+
+document.addEventListener("DOMContentLoaded", bindFeedbackForm);
+
+// For HTMX swapped content
+document.body.addEventListener("htmx:afterSwap", evt => {
+    if (evt.detail.target.id === "createTarget") {
+        const trigger = evt.detail.elt;
+        const roundId = trigger.getAttribute("data-interview-round");
+        const interviewerId = trigger.getAttribute("data-interviewer");
+
+        const roundField = document.getElementById("id_interview_round");
+        const interviewerField = document.getElementById("id_interviewer");
+
+        if (roundId) {
+            roundField.value = roundId;
+            document.getElementById("interview_round_text").textContent = `Round ID: ${roundId}`;
+            document.getElementById("round-group").style.display = "block";
+        }
+
+        if (interviewerId) {
+            interviewerField.value = interviewerId;
+            document.getElementById("interviewer_text").textContent = `Interviewer ID: ${interviewerId}`;
+            document.getElementById("interviewer-group").style.display = "block";
+        }
+
+        bindFeedbackForm();
+
+        const modal = document.getElementById("feedbackModal");
+        if (modal && modal.style.display === "none") {
+            modal.style.display = "block";
+            modal.classList.add("show");
+            modal.removeAttribute("aria-hidden");
+        }
+    }
+});
+
+document.addEventListener('closeModalEvent', function(event) {
+    console.log("HTMX triggered closeModalEvent - closing modal");
+    const modal = document.getElementById("feedbackModal"); // Ensure this is the correct ID of your modal
+    if (modal) {
+        modal.style.display = "none";
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+    }
+    // You might want to add logic here to refresh a list of feedback
+    // using another HTMX request if needed, instead of a full reload.
+});
+
+function handleFeedbackSuccess(evt) {
+    const detail = evt.detail;
+    const xhr = detail.xhr;
+    const contentType = xhr.getResponseHeader("content-type");
+
+    try {
+        const json = JSON.parse(xhr.response);
+
+        if (json.success) {
+            console.log("Feedback submission successful (JSON) - closing modal");
+            closeModal();
+        } else if (json.html) {
+            console.log("Form errors received (JSON) - updating createTarget");
+            document.querySelector("#createTarget").innerHTML = json.html;
+        }
+    } catch (err) {
+        console.warn("Fallback: received HTML, not JSON. Trying to detect success in HTML.");
+
+        // Replace the form content
+        document.querySelector("#createTarget").innerHTML = xhr.response;
+
+        // Check if #feedbackSuccess exists in the new HTML
+        if (document.getElementById("feedbackSuccess")) {
+            console.log("Feedback submission successful (HTML) - closing modal");
+            closeModal();
+        }
+    }
+}
 
 </script>

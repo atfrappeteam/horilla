@@ -37,7 +37,7 @@ from django.core.cache import cache as CACHE
 from django.core.mail import EmailMessage
 from django.core.paginator import Paginator
 from django.db.models import Case, IntegerField, ProtectedError, Q, When
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -3630,49 +3630,149 @@ def delete_interview_round(request, pk):
     return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
 
 @login_required
-def create_feedback(request):
+def create_feedback(request, pk):
+    print("🚀 Entered create_feedback view")
     skills = ["technical_skill", "communication", "problem", "attitude"]
+    interview = get_object_or_404(InterviewSchedule, pk=pk)
+    print(f"🧾 Interview loaded: {interview}")
+
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    print(f"🔎 Request is {'AJAX/HTMX' if is_ajax else 'normal HTML'}")
 
     if request.method == 'POST':
+        print("📨 POST request received")
+        print("📦 POST data:", request.POST)
+
         form = InterviewFeedbackForm(request.POST)
+        print("📝 Form instantiated")
 
+        # Manual duplicate check
+        interview_id = request.POST.get("interview")
+        round_id = request.POST.get("interview_round")
+        interviewer_id = request.POST.get("interviewer")
+        print(f"🆔 Interview: {interview_id}, Round: {round_id}, Interviewer: {interviewer_id}")
+
+        if interview_id and round_id and interviewer_id:
+            duplicate = InterviewFeedback.objects.filter(
+                interview_id=interview_id,
+                interview_round_id=round_id,
+                interviewer_id=interviewer_id
+            ).exists()
+
+            if duplicate:
+                error_msg = "Feedback already submitted for this interview, round, and interviewer."
+                print(f"⚠️ Duplicate found: {error_msg}")
+                form.add_error(None, error_msg)  # Add error to the form
+
+                # Render the form with the error message and return it
+                html = render_to_string("feedback/create_feedback.html", {
+                    "form": form, "skills": skills, "interview": interview, "error_msg": error_msg
+                }, request=request)
+
+                if is_ajax:
+                    return HttpResponse(html)  # Return HTML snippet for AJAX request
+                else:
+                    return render(request, "feedback/create_feedback.html", {
+                        "form": form, "skills": skills, "interview": interview, "error_msg": error_msg
+                    })
+
+        # Validate form
         if form.is_valid():
-            print("Form is valid and no duplicates found")
+            print("✅ Form is valid")
+
             interview_feedback = form.save()
-            messages.success(request, f"Interview feedback '{interview_feedback.interview}' created successfully.")
+            print("💾 Feedback saved:", interview_feedback)
 
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({"success": True})
+            messages.success(request, f"Feedback for '{interview_feedback.interview}' submitted successfully.")
 
-            return redirect("list_interview_feedback")
+            # Respond with success message for HTMX, and full HTML for normal requests
+            if is_ajax:
+                success_html = '''
+                <div id="feedbackSuccess" style="display:none;">1</div>
+                <script>
+                    const successMessage = document.getElementById("feedbackSuccess");
+                    if (successMessage) {
+                        successMessage.style.display = "block";  // Show success message
+                    }
+                    closeModal();  // Close the modal immediately
+                    location.reload();  // Reload the page immediately after success
+                </script>
+                '''
+                return HttpResponse(success_html)  # HTMX request: success message in HTML snippet
+            else:
+                success_html = '''
+                <div id="feedbackSuccess" style="display:none;">1</div>
+                <script>
+                    const successMessage = document.getElementById("feedbackSuccess");
+                    if (successMessage) {
+                        successMessage.style.display = "block";  // Show success message
+                    }
+                    location.reload();  // Reload the page immediately after success
+                </script>
+                '''
+                return HttpResponse(success_html)
 
-        # If form is invalid
-        if request.headers.get("x-requested-with") == 'XMLHttpRequest':
-            html = render_to_string("feedback/create_feedback.html", {"form": form, "skills": skills}, request=request)
-            return JsonResponse({"success": False, "html": html})
+        # Invalid form
+        print("❌ Form is invalid")
+        print("📛 Form errors:", form.errors.as_json())
 
-        messages.error(request, "Error: Please correct the form errors and try again.")
+        if is_ajax:
+            html = render_to_string("feedback/create_feedback.html", {
+                "form": form, "skills": skills, "interview": interview
+            }, request=request)
+            return HttpResponse(html)
+        else:
+            messages.error(request, "Error: Please correct the form errors and try again.")
+            return render(request, "feedback/create_feedback.html", {
+                "form": form, "skills": skills, "interview": interview
+            })
 
     else:
-        form = InterviewFeedbackForm()
+        print("📥 GET request received — rendering empty form")
+        form = InterviewFeedbackForm(initial={"interview": interview})
 
-    return render(request, "feedback/create_feedback.html", {"form": form, "skills": skills})
+    return render(request, "feedback/create_feedback.html", {
+        "form": form,
+        "skills": skills,
+        "interview": interview
+    })
+
+
 
 def list_interview_feedback(request):
     interview_feedback = InterviewFeedback.objects.all().order_by('-id')
     return render(request, 'feedback/interview_feedback_list.html', {"interview_feedback" : interview_feedback} )
 
-def get_interview_details(request, interview_id):
+
+def get_interview_details(request, interview_schedule_id):
+    print(f"Received interview_schedule_id: {interview_schedule_id}")  # Debugging line
     try:
-        interview = InterviewSchedule.objects.get(id=interview_id)
-        round_id = interview.interview_round.id if interview.interview_round else None
-        interviewer_ids = list(interview.employee_id.values_list('id', flat=True))
+        interview_schedule = InterviewSchedule.objects.get(id=interview_schedule_id)
+        print(f"Found interview_schedule: {interview_schedule}")  # Debugging line
+
+        interview_round = interview_schedule.interview_round
+        round_id = interview_round.id if interview_round else None
+        round_name = interview_round.round_name if interview_round else "No Round Assigned"
+
+        interviewer_names = [interviewer.get_full_name() for interviewer in interview_schedule.employee_id.all()]
+        interviewer_ids = [interviewer.id for interviewer in interview_schedule.employee_id.all()]
+
+        print(f"Round Name: {round_name}, Interviewers: {interviewer_names}")  # Debugging line
+
         return JsonResponse({
-            'round_id': round_id,
-            'interviewer_ids': interviewer_ids
+            "interview_schedule_id": interview_schedule.id,
+            "candidate": interview_schedule.candidate_id.id,
+            "interview_date": interview_schedule.interview_date,
+            "interview_time": interview_schedule.interview_time,
+            "round_id": round_id,
+            "round_name": round_name,
+            "interviewer_ids": interviewer_ids,
+            "interviewer_names": interviewer_names,
+            "completed": interview_schedule.completed,
         })
     except InterviewSchedule.DoesNotExist:
-        return JsonResponse({'error': 'Interview not found'}, status=404)
+        return JsonResponse({"error": "Interview schedule not found"}, status=404)
+
 
 def feedback_detail_view(request, pk):
     feedback = get_object_or_404(InterviewFeedback, pk=pk)

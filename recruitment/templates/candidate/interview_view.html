@@ -3,52 +3,187 @@
 {% load static %}
 {% load i18n %}
 
-<div class="oh-modal" id="createModal" role="dialog" aria-hidden="true">
-  <div class="oh-modal__dialog" style="max-width: 550px">
-      <div class="oh-modal__dialog-header">
-      <button onclick="$(this).closest('#createModal').removeClass('oh-modal--show');" type="button" class="oh-modal__close" aria-label="Close"><ion-icon name="close-outline"></ion-icon></button>
+<!-- Main Modal -->
+<div class="oh-modal" id="createModal" role="dialog" aria-hidden="true" style="display: none;">
+  <div class="oh-modal__dialog">
+    <div class="oh-modal__dialog-header">
+      <button type="button" class="oh-modal__close" aria-label="Close" onclick="closeModal()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    </div>
+    <div class="oh-modal__dialog-body" id="createTarget">
+      <!-- Dynamic content will be loaded here -->
+      <div id="round-group" style="display: none;">
+        <p><strong>Interview Round: </strong><span id="round-text"></span></p>
       </div>
-
-      <div class="oh-modal__dialog-body" id="createTarget"></div>
+      <div id="interviewer-group" style="display: none;">
+        <p><strong>Interviewer: </strong><span id="interviewer-text"></span></p>
+      </div>
+      <!-- Feedback form, if necessary -->
+      <form id="feedbackForm" action="/submit-feedback" method="POST">
+        <!-- Form fields for feedback -->
+        <button id="submitFeedbackButton" type="submit">Submit Feedback</button>
+      </form>
+    </div>
   </div>
 </div>
 
 <style>
-  .to-employee{
-    background: #f1ffd5;
+  .oh-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    background: transparent !important;
+    pointer-events: none;
   }
-  .to-employee:hover{
-    background-color: #f1ffd5 !important;
+
+  .oh-modal.oh-modal--show {
+    display: block !important;
+    pointer-events: auto;
   }
-  .oh-rate:not(:checked)>label:hover, .oh-rate:not(:checked)>label:hover~label{
-    color: #ccc
+
+  .oh-modal__dialog {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    max-width: 550px;
+    width: 100%;
+    overflow: hidden;
   }
-  .diff-cell{
-    background: rgba(255, 166, 0, 0.158);
+
+  .oh-modal__dialog-header {
+    padding: 10px;
+    text-align: right;
+    background-color: #f5f5f5;
+  }
+
+  .oh-modal__dialog-body {
+    padding: 20px;
+  }
+
+  .oh-modal__close {
+    border: none;
+    background: none;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  /* Optional - For star rating */
+  .star-rating i {
+    cursor: pointer;
+  }
+
+  .filled {
+    color: #ffcd3c;
   }
 </style>
+
 {% include 'candidate/interview_nav.html' %}
+
 <div class="oh-wrapper">
   <div id="section" hx-target="#section" hx-swap="innerHTML">
-      {% include 'candidate/interview_list.html' %}
+    {% include 'candidate/interview_list.html' %}
   </div>
 </div>
 
-<div class="oh-modal" id="createModal" role="dialog" aria-hidden="true">
-    <div class="oh-modal__dialog" style="max-width: 550px">
-        <div class="oh-modal__dialog-header">
-        <button onclick="$(this).closest('#createModal').removeClass('oh-modal--show');" type="button" class="oh-modal__close" aria-label="Close"><ion-icon name="close-outline"></ion-icon></button>
-        </div>
-
-        <div class="oh-modal__dialog-body" id="createTarget"></div>
-    </div>
-</div>
-
 <script src="{% static '/candidate/bulk.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  $(".oh-permission-table--toggle").on("click", function(){
-      $(this).siblings(".oh-sticky-table__td").children(".count-span").toggleClass("d-none")
-  })
+function openModalWithContent(url) {
+  console.log("Opening modal with content from URL:", url);
+  closeModal();
+  $('#createTarget').load(url, function () {
+    console.log("Content loaded into the modal.");
+    $('#createModal').addClass('oh-modal--show');
+    bindFeedbackFormEvents();  // Bind events after content is loaded
+  });
+}
+
+function closeModal() {
+  console.log("Closing modal...");
+  $('#createModal').removeClass('oh-modal--show');
+  $('#createTarget').empty(); // Clear modal content
+  window.location.reload()
+}
+
+document.body.addEventListener('htmx:afterSwap', function (e) {
+  console.log("🔥 htmx:afterSwap event triggered");
+
+  if (e.detail.target.id === 'createTarget') {
+    console.log("✅ Swapped into createTarget. Opening modal now...");
+
+    $('#createModal').addClass('oh-modal--show');
+
+    initializeStarRatings(); // star rating rebind
+
+    const roundId = e.detail.elt.getAttribute('data-interview-round');
+    const interviewerId = e.detail.elt.getAttribute('data-interviewer');
+    console.log("Round ID:", roundId);
+    console.log("Interviewer ID:", interviewerId);
+
+    const roundText = document.getElementById("round-text");
+    const interviewerText = document.getElementById("interviewer-text");
+
+    if (roundText && roundId) {
+      console.log("🎯 Setting Interview Round Text...");
+      const roundOption = document.querySelector(`#id_interview_round option[value="${roundId}"]`);
+      if (roundOption) {
+        roundText.textContent = roundOption.text;
+        document.getElementById("round-group").style.display = "block";
+        console.log("✅ Interview Round Set:", roundOption.text);
+      } else {
+        console.warn("⚠️ Interview Round not found for ID:", roundId);
+      }
+    }
+
+    if (interviewerText && interviewerId) {
+      console.log("🎯 Setting Interviewer Text...");
+      const interviewerOption = document.querySelector(`#id_interviewer option[value="${interviewerId}"]`);
+      if (interviewerOption) {
+        interviewerText.textContent = interviewerOption.text;
+        document.getElementById("interviewer-group").style.display = "block";
+        console.log("✅ Interviewer Set:", interviewerOption.text);
+      } else {
+        console.warn("⚠️ Interviewer not found for ID:", interviewerId);
+      }
+    }
+  } else {
+    console.warn("⚠️ htmx:afterSwap triggered but not on #createTarget (got id:", e.detail.target.id, ")");
+  }
+});
+
+
+$(".oh-permission-table--toggle").on("click", function () {
+  $(this).siblings(".oh-sticky-table__td").children(".count-span").toggleClass("d-none");
+});
+
+
+function initializeStarRatings() {
+  document.querySelectorAll(".star-rating").forEach(function (ratingDiv) {
+    const fieldName = ratingDiv.dataset.field;
+    const stars = ratingDiv.querySelectorAll("i");
+    const hiddenInput = document.getElementById(`id_${fieldName}`);
+
+    stars.forEach(function (star) {
+      star.addEventListener("click", function () {
+        const ratingValue = parseInt(this.dataset.value);
+        hiddenInput.value = ratingValue;
+
+        stars.forEach((s, i) => {
+          if (i < ratingValue) {
+            s.classList.remove("bi-star");
+            s.classList.add("bi-star-fill", "filled");
+          } else {
+            s.classList.remove("bi-star-fill", "filled");
+            s.classList.add("bi-star");
+          }
+        });
+      });
+    });
+  });
+}
 </script>
 
 {% endblock %}
