@@ -108,12 +108,12 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-horillavenv/
+horillavenv
 
 # Spyder project settings
 .spyderproject
 .spyproject
-
+.idea/
 # Rope project settings
 .ropeproject
 
