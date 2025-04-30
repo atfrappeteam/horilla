@@ -1,79 +1,16 @@
 {% load static %}
 {% load i18n %}
+
+<!-- ✅ Select2 Dependencies -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
 <style>
     .padded-container {
         padding: 2rem;
     }
-</style>
-
-<div id="dailyWorkSummaryForm" class="container-fluid mt-4 px-4 py-4">
-    <div class="card shadow-sm p-4">
-        <form method="POST"
-      {% if edit %}
-          hx-post="{% url 'daily_work_summary_edit' summary_id %}"
-      {% else %}
-          hx-post="{% url 'daily_work_summary_create' %}"
-      {% endif %}
-      hx-target="#dailyWorkSummaryCreateModalTarget"
-      hx-swap="outerHTML"
-      hx-trigger="submit">
-
-            {% csrf_token %}
-
-            <h4 class="mb-4">{% trans "Create Daily Work Summary" %}</h4>
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">{% trans "Name" %}</label>
-                    {{ form.name }}
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">{% trans "Send Email At" %}</label>
-                    {{ form.send_email_at }}
-                </div>
-
-                <!-- <div class="col-md-12">
-                    <label class="form-label">{% trans "Employees" %}</label>
-                    {{ form.users }}
-                </div> -->
-                <div class="oh-input-group mb-3">
-                    <label for="id_users" class="mb-1">Select Employees (Emails)</label>
-                    {{ form.users.errors }}
-                    {{ form.users }}
-                </div>
-                
-
-                <div class="col-md-12">
-                    <label class="form-label">{% trans "Holiday List" %}</label>
-                    <div class="d-flex mb-2">
-                        <input type="date" id="holiday-list-picker" class="form-control me-2">
-                        <button type="button" class="btn btn-outline-primary" onclick="addDate()">Add</button>
-                    </div>
-                    <div id="selectedDatesContainer" class="mb-2"></div>
-                    <input type="hidden" id="id_holiday_list" name="holiday_list" value="{{ form.initial.holiday_list }}">
-                </div>
-
-                <div class="col-md-12">
-                    <label class="form-label">{% trans "Subject" %}</label>
-                    {{ form.subject }}
-                </div>
-
-                <div class="col-md-12">
-                    <label class="form-label">{% trans "Message" %}</label>
-                    {{ form.message }}
-                </div>
-            </div>
-
-            <div class="mt-4 d-flex justify-content-end">
-                <button type="submit" class="btn btn-danger me-2">{% trans "Save" %}</button>
-                <button type="button" class="btn btn-secondary" onclick="history.back();">{% trans "Cancel" %}</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<style>
     .date-box {
         display: inline-block;
         background-color: #f1f1f1;
@@ -82,6 +19,11 @@
         border-radius: 4px;
         font-size: 14px;
     }
+    .select2-container {
+        z-index: 9999 !important;
+        display: block !important;
+    }
+    
 
     .remove-btn {
         color: #888;
@@ -97,6 +39,95 @@
     }
 </style>
 
+<div id="dailyWorkSummaryForm" class="container-fluid mt-4 px-4 py-4">
+    <div class="card shadow-sm p-4">
+        <form method="POST"
+              {% if edit %}
+                  hx-post="{% url 'daily_work_summary_edit' summary_id %}"
+              {% else %}
+                  hx-post="{% url 'daily_work_summary_create' %}"
+              {% endif %}
+              hx-target="#dailyWorkSummaryCreateModalTarget"
+              hx-swap="outerHTML"
+              hx-trigger="submit">
+
+            {% csrf_token %}
+
+            <h4 class="mb-4">{% trans "Create Daily Work Summary" %}</h4>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Name" %}</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">{% trans "Send Email At" %}</label>
+                    {{ form.send_email_at }}
+                    {% if form.send_email_at.errors %}
+                        <div class="text-danger">{{ form.send_email_at.errors }}</div>
+                    {% endif %}
+                </div>
+
+               
+             <div class="col-md-12">
+                    <label for="id_users" class="form-label">{% trans "Select Employees (Emails)" %}</label>
+                    <select name="users" multiple class="form-control select2-multiple" id="id_users">
+                        {% for user in form.fields.users.queryset %}
+                            <option value="{{ user.id }}" {% if user.id in form.users.value %}selected{% endif %}>
+                                {{ user.employee_get.employee_first_name }} {{ user.employee_get.employee_last_name }} ({{ user.email }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.users.errors %}
+                        <div class="text-danger">{{ form.users.errors }}</div>
+                    {% endif %}
+                </div>            
+                
+                <div class="col-md-12">
+                    <label class="form-label">{% trans "Holiday List" %}</label>
+                    <div class="d-flex mb-2">
+                        <input type="date" id="holiday-list-picker" class="form-control me-2">
+                        <button type="button" class="btn btn-outline-primary" onclick="addDate()">Add</button>
+                    </div>
+                    <div id="selectedDatesContainer" class="mb-2"></div>
+                    <input type="hidden" id="id_holiday_list" name="holiday_list" value="{{ form.initial.holiday_list }}">
+                    {% if form.holiday_list.errors %}
+                        <div class="text-danger">{{ form.holiday_list.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">{% trans "Subject" %}</label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}
+                        <div class="text-danger">{{ form.subject.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">{% trans "Message" %}</label>
+                    {{ form.message }}
+                    {% if form.message.errors %}
+                        <div class="text-danger">{{ form.message.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end">
+                <button type="submit" class="btn btn-danger me-2">{% trans "Save" %}</button>
+                <a href="{% url 'daily_work_summary_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+                
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<!-- ✅ JavaScript -->
 <script>
     let selectedDates = [];
 
@@ -113,6 +144,8 @@
                 hiddenInput.value = selectedDates.join(',');
             });
         }
+
+        initSelect2();
     });
 
     function addDate() {
@@ -146,140 +179,45 @@
             container.appendChild(span);
         });
     }
+
+  
+    // ... (existing holiday list code remains the same) ...
+
+    function initSelect2() {
+        const $users = $('#id_users');
+        if ($users.length) {
+            $users.select2({
+                placeholder: "{% trans 'Select employee emails' %}",
+                width: '100%',
+                allowClear: true,
+                closeOnSelect: false, // Allows clicking multiple items without Ctrl
+                templateSelection: function (data, container) {
+                    if (data.id === '') {
+                        return "{% trans 'Select employee emails' %}";
+                    }
+                    // Reduce font size for selected options
+                    $(container).css('font-size', '14px');
+                    return data.text;
+                },
+                templateResult: function (data) {
+                    if (!data.id) { return data.text; }
+                    // Reduce font size for dropdown options
+                    var $result = $('<span style="font-size: 14px; ">' + data.text + '</span>');
+                    return $result;
+                }
+            });
+        }
+    }
+
+    // Initialize on page load
+    // document.addEventListener("DOMContentLoaded", function () {
+    //     initSelect2(); // Add this line
+    // });
+
+    // Re-initialize after HTMX swaps
+    document.body.addEventListener('htmx:afterSwap', function () {
+        initSelect2();
+    });
 </script>
 
 
-<!-- {% load static %}
-{% load i18n %}
-
-<div id="dailyWorkSummaryForm">
-    <form method="POST" hx-post="{% url 'daily_work_summary_create' %}" 
-          hx-target="#dailyWorkSummaryCreateModalTarget" 
-          hx-swap="outerHTML"
-          hx-trigger="submit">
-        {% csrf_token %}
-
-        <div class="modal-header">
-            <h5 class="modal-title">{% trans "Create Daily Work Summary" %}</h5>
-            <button type="button" class="close" data-dismiss="modal">&times;</button>
-        </div>
-
-        <div class="modal-body">
-            <div class="form-group">
-                <label>{% trans "Name" %}</label>
-                {{ form.name }}
-            </div>
-
-            <div class="form-group">
-                <label>{% trans "Users" %}</label>
-                {{ form.users }}
-            </div>
-
-            <div class="form-group">
-                <label>{% trans "Send Email At" %}</label>
-                {{ form.send_email_at }}
-            </div>
-
-             Editable Holiday List -->
-            <!-- <div class="form-group">
-                <label>{% trans "Holiday List" %}</label>
-                <div class="d-flex mb-2">
-                    <input type="date" id="holiday-list-picker" class="form-control mr-2">
-                    <button type="button" class="btn btn-secondary" onclick="addDate()">Add</button>
-                </div>
-                <div id="selectedDatesContainer" class="mb-2"></div>
-                <input type="hidden" id="id_holiday_list" name="holiday_list" value="{{ form.initial.holiday_list }}">
-            </div>
-
-            <div class="form-group">
-                <label>{% trans "Subject" %}</label>
-                {{ form.subject }}
-            </div>
-
-            <div class="form-group">
-                <label>{% trans "Message" %}</label>
-                {{ form.message }}
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
-        </div>
-    </form>
-</div>
-
-<style>
-    .date-box {
-        display: inline-block;
-        background-color: #f1f1f1;
-        padding: 5px 10px;
-        margin: 3px;
-        border-radius: 4px;
-        font-size: 14px;
-    }
-
-    .date-box .remove-btn {
-        color: #888;
-        background: transparent;
-        border: none;
-        font-size: 14px;
-        margin-left: 5px;
-        cursor: pointer;
-    }
-
-    .date-box .remove-btn:hover {
-        color: red;
-    }
-</style>
-
-<script>
-    let selectedDates = [];
-
-    document.addEventListener("DOMContentLoaded", function () {
-        const hiddenInput = document.getElementById("id_holiday_list");
-        if (hiddenInput && hiddenInput.value) {
-            selectedDates = hiddenInput.value.split(',').map(d => d.trim()).filter(d => d);
-            updateDisplay();
-        }
-
-        const form = document.querySelector("#dailyWorkSummaryForm form");
-        if (form) {
-            form.addEventListener("submit", function () {
-                hiddenInput.value = selectedDates.join(',');
-            });
-        }
-    });
-
-    function addDate() {
-        const input = document.getElementById("holiday-list-picker");
-        const date = input.value.trim();
-        if (date && !selectedDates.includes(date)) {
-            selectedDates.push(date);
-            input.value = "";
-            updateDisplay();
-        }
-    }
-
-    function removeDate(index) {
-        selectedDates.splice(index, 1);
-        updateDisplay();
-    }
-
-    function updateDisplay() {
-        const container = document.getElementById("selectedDatesContainer");
-        const hiddenInput = document.getElementById("id_holiday_list");
-        container.innerHTML = "";
-        hiddenInput.value = selectedDates.join(',');
-
-        selectedDates.forEach((date, index) => {
-            const span = document.createElement("span");
-            span.className = "date-box";
-            span.innerHTML = `
-                ${date}
-                <button type="button" class="remove-btn" onclick="removeDate(${index})">&times;</button>
-            `;
-            container.appendChild(span);
-        });
-    }
-</script> --> 

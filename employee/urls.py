@@ -423,13 +423,6 @@ urlpatterns = [
         name="employee-tag-delete",
         kwargs={"model": EmployeeTag, "HttpResponse": True},
     ),
-    # path('daily-work-summary/', DailyWorkSummaryListView.as_view(), name='daily_work_summary_list'),
-    # path('daily-work-summary/create/', daily_work_summary_create, name='daily_work_summary_create'),
-
-    # path('daily-work-summary/', DailyWorkSummaryListView.as_view(), name='daily_work_summary'),
-    # path('daily-work-summary/', daily_work_summary_create, name='daily_work_summary_create'),
-    # path('daily-work-summary/', DailyWorkSummaryListView.as_view(), name='daily_work_summary_list'),
-     # List view for displaying all daily work summaries
     path('daily-work-summary/', DailyWorkSummaryListView.as_view(), name='daily_work_summary'),
 
     # API route for fetching the list (optional if using ListView)
